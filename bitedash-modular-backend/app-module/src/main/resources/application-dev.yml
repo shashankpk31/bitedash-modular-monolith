@@ -1,0 +1,20 @@
+# Development profile: use when running locally without .env (e.g. from IDE).
+# DO NOT use this profile in production.
+# Run with: -Dspring.profiles.active=dev
+# Or set SPRING_PROFILES_ACTIVE=dev
+
+spring:
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5434/bitedash_monolith}
+    username: ${DATABASE_USERNAME:hbadmin}
+    password: ${DATABASE_PASSWORD:password}
+
+# Dev-only JWT secret (min 256 bits). Replace with real secret in production.
+jwt:
+  secret: ${JWT_SECRET:dev-only-secret-key-min-256-bits-for-jwt-token-generation-do-not-use-in-production}
+
+logging:
+  level:
+    root: INFO
+    com.bitedash: DEBUG
+    org.hibernate.SQL: DEBUG

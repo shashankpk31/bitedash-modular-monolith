@@ -1,0 +1,9 @@
+# Identity Module Configuration
+# This file contains module-specific configuration
+# The main application.yml in app-module will override these values
+
+spring:
+  jpa:
+    properties:
+      hibernate:
+        default_schema: identity_schema

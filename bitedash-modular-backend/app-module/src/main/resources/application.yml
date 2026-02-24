@@ -1,0 +1,131 @@
+spring:
+  application:
+    name: bitedash-app
+
+  datasource:
+    # DATABASE_URL format: jdbc:postgresql://host:port/database
+    # For Docker dev: jdbc:postgresql://localhost:5432/bitedash
+    # For AWS prod: Set via environment variable
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/bitedash}
+    username: ${DATABASE_USERNAME:postgres}
+    password: ${DATABASE_PASSWORD:password}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        use_sql_comments: true
+        default_schema: public
+    open-in-view: false
+
+  security:
+    filter:
+      order: -100
+
+  # Redis Configuration (for OTP storage in identity module)
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 60000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+
+  # Email Configuration
+  # For Mailtrap (Testing): host=sandbox.smtp.mailtrap.io, port=2525
+  # For Gmail (Production): host=smtp.gmail.com, port=587
+  # For SendGrid (Production): host=smtp.sendgrid.net, port=587
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+        debug: false
+
+  # Async Execution (for event listeners)
+  task:
+    execution:
+      pool:
+        core-size: 2
+        max-size: 5
+        queue-capacity: 100
+
+# Server Configuration
+server:
+  port: ${PORT:8089}
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain
+  error:
+    include-message: always
+    include-binding-errors: always
+
+# JWT Configuration
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: 86400000 # 24 hours in milliseconds
+
+# QR Code Security Configuration
+qr:
+  secret:
+    key: ${QR_SECRET_KEY}
+
+# Twilio Configuration (for SMS notifications)
+twilio:
+  account-sid: ${TWILIO_ACCOUNT_SID:}
+  auth-token: ${TWILIO_AUTH_TOKEN:}
+  phone-number: ${TWILIO_PHONE_NUMBER:}
+
+# Logging Configuration
+logging:
+  level:
+    root: INFO
+
+# API Documentation
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    operations-sorter: method
+    tags-sorter: alpha
+
+# Management Endpoints (for health checks and monitoring)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true

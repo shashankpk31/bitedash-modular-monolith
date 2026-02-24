@@ -1,0 +1,93 @@
+# ==========================================
+# BiteDash Project - .gitignore
+# ==========================================
+
+# Node modules
+node_modules/
+frontend/node_modules/
+**/node_modules/
+
+# Build outputs
+frontend/dist/
+frontend/build/
+bitedash-modular-backend/target/
+bitedash-modular-backend/*/target/
+*.jar
+*.war
+
+# Static folder (frontend build will be copied here, but don't commit it)
+bitedash-modular-backend/app-module/src/main/resources/static/
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files - NEVER COMMIT THESE!
+.env
+.env.local
+.env.production
+frontend/.env
+frontend/.env.local
+frontend/.env.production
+
+# IDE settings
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+.classpath
+.project
+.settings/
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
+.cache/
+
+# Test coverage
+coverage/
+.nyc_output/
+htmlcov/
+
+# Database files (local development only)
+*.db
+*.sqlite
+
+# Maven wrapper (optional - you can commit mvnw if you want)
+.mvn/
+mvnw
+mvnw.cmd
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Compiled class files
+*.class
+
+# Package files
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Spring Boot
+spring.log
+
+# Error and debug files
+error.txt
+debug.log
+CLAUDE.md
+ignore/
+health_doc/
+.metadata

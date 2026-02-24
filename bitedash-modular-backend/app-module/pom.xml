@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.bitedash</groupId>
+        <artifactId>modular-bitedash-parent</artifactId>
+        <version>1.0.0</version>
+    </parent>
+
+    <artifactId>app-module</artifactId>
+    <name>BiteDash Application</name>
+    <description>Main Spring Boot Application</description>
+    <packaging>jar</packaging>
+
+    <dependencies>
+        <!-- All Module Dependencies -->
+        <dependency>
+            <groupId>com.bitedash</groupId>
+            <artifactId>shared-module</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.bitedash</groupId>
+            <artifactId>identity-module</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.bitedash</groupId>
+            <artifactId>organisation-module</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.bitedash</groupId>
+            <artifactId>order-module</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.bitedash</groupId>
+            <artifactId>menu-module</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.bitedash</groupId>
+            <artifactId>wallet-module</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.bitedash</groupId>
+            <artifactId>payment-module</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.bitedash</groupId>
+            <artifactId>notification-module</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.bitedash</groupId>
+            <artifactId>inventory-module</artifactId>
+        </dependency>
+
+        <!-- Spring Boot Starters -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aop</artifactId>
+        </dependency>
+
+        <!-- PostgreSQL Driver -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- SpringDoc OpenAPI (Swagger) -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+        </dependency>
+
+        <!-- Lombok -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- Monitoring: Prometheus Metrics -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <finalName>bitedash-app</finalName>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <mainClass>com.bitedash.BiteDashApplication</mainClass>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

@@ -1,0 +1,144 @@
+# Production Configuration for BiteDash
+# This configuration is used when deploying to production (AWS, etc.)
+# Set SPRING_PROFILES_ACTIVE=prod environment variable
+
+spring:
+  application:
+    name: bitedash-app
+
+  datasource:
+    # DATABASE_URL format: jdbc:postgresql://host:port/database
+    # Set via environment variables by deployment script
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate  # IMPORTANT: validate only in production
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false
+        use_sql_comments: false
+        default_schema: public
+    open-in-view: false
+
+  security:
+    filter:
+      order: -100
+
+  # Redis Configuration
+  # Set REDIS_HOST, REDIS_PORT, and REDIS_PASSWORD as environment variables
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD}
+      timeout: 60000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
+  # Async Execution
+  task:
+    execution:
+      pool:
+        core-size: 2
+        max-size: 5
+        queue-capacity: 100
+
+  # Web MVC - Static Resources (Frontend)
+  web:
+    resources:
+      static-locations: classpath:/static/
+      cache:
+        cachecontrol:
+          max-age: 365d  # Cache static assets for 1 year
+          must-revalidate: false
+          no-cache: false
+
+# Server Configuration
+server:
+  port: ${PORT:8089}
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain,text/css,application/javascript
+    min-response-size: 1024
+  error:
+    include-message: never  # Don't expose error details in production
+    include-binding-errors: never
+    include-stacktrace: never
+    include-exception: false
+
+# JWT Configuration
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: 86400000 # 24 hours
+
+# Twilio Configuration
+twilio:
+  account-sid: ${TWILIO_ACCOUNT_SID:}
+  auth-token: ${TWILIO_AUTH_TOKEN:}
+  phone-number: ${TWILIO_PHONE_NUMBER:}
+
+# Logging Configuration
+logging:
+  level:
+    root: INFO
+    com.bitedash: INFO
+    org.springframework: WARN
+    org.hibernate: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+  file:
+    name: /app/logs/bitedash.log
+    max-size: 10MB
+    max-history: 30
+
+# API Documentation (DISABLE in production)
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+# Management Endpoints (Restrict in production)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info  # Only expose health and info
+  endpoint:
+    health:
+      show-details: when-authorized  # Only show details to authorized users
+  metrics:
+    export:
+      prometheus:
+        enabled: true
