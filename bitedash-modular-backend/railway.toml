@@ -8,8 +8,3 @@ dockerfilePath = "Dockerfile"
 startCommand = "java -Dspring.profiles.active=prod -Xmx512m -Xms256m -jar app.jar"
 healthcheckPath = "/actuator/health"
 healthcheckTimeout = 300
-restartPolicyType = "on-failure"
-restartPolicyMaxRetries = 3
-
-[[services]]
-name = "bitedash"
