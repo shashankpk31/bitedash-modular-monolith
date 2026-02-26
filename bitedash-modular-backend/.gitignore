@@ -1,7 +1,12 @@
-# Markdown files (ignore all except README)
+# Markdown files (keep deployment guides, exclude sensitive docs)
 *.md
 !README.md
 !readme.md
+!RAILWAY_DEPLOYMENT_GUIDE.md
+!DEPLOYMENT_CHECKLIST.md
+# Explicitly ignore sensitive documentation
+CLAUDE.md
+DEPLOYMENT.md
 
 # Compiled class files
 *.class
@@ -20,7 +25,13 @@ logs/
 *.zip
 *.tar.gz
 *.rar
+
+# Shell scripts - ignore credential files, keep deployment scripts
+bite-env.sh
 *.sh
+!build-for-deployment.sh
+!init-database.sh
+
 # Maven
 .mvn/
 mvnw
@@ -46,9 +57,12 @@ mvnw.cmd
 .DS_Store
 Thumbs.db
 
-# Environment
+# Environment - NEVER commit files with real credentials!
 .env
-.env.local
+.env.*
+!.env.example
+bite-env.sh
+deployment-config.txt
 
 # Spring Boot
 spring.log
@@ -96,3 +110,4 @@ build/
 error.txt
 debug.log
 .env*
+deployment-config.txt

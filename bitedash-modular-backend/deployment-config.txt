@@ -1,18 +1,0 @@
-BiteDash AWS Deployment Configuration
-Generated: Sun Feb 22 19:26:40 IST 2026
-
-AWS Region: us-east-1
-Instance ID: i-06ed45a29d6eb9b23
-Public IP: 54.234.245.41
-
-Database Endpoint: bitedash-db.cdq3r2vqsykj.us-east-1.rds.amazonaws.com
-Database URL: jdbc:postgresql://bitedash-db.cdq3r2vqsykj.us-east-1.rds.amazonaws.com:5432/bitedash
-Database Username: bitedash_admin
-Database Password: Hoep5jgOjzh0p1tJxcpFrgpf3
-
-Redis Endpoint: bitedash-redis.89heuj.0001.use1.cache.amazonaws.com:6379
-
-JWT Secret: JrE9ZSAgHCx5QgSsV8WujP6vq4vshEIG/K+dAVCBRZKW9VXBTyqLPKzEaFwm0tNzwAULp866f1TOlC0X9BpPFA==
-QR Secret Key: Upa55ZYxXqlUI+BpvVM2sNtqZJDDij8fDPAkCtCiF2dAYcADS3JuyxnmYAbS2quUUwzAG/U0OrwGQA+xEL2uwQ==
-
-Key Pair: bitedash-key.pem

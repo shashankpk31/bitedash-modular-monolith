@@ -25,7 +25,6 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
         // User destination prefix for user-specific messages
         config.setUserDestinationPrefix("/user"); 
-        System.out.println("");
     }
 
     @Override
