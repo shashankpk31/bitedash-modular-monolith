@@ -15,8 +15,8 @@ bitedash-modular-backend/*/target/
 *.jar
 *.war
 
-# Static folder (frontend build will be copied here, but don't commit it)
-bitedash-modular-backend/app-module/src/main/resources/static/
+# Static folder - NOW COMMITTED for Railway deployment
+# bitedash-modular-backend/app-module/src/main/resources/static/
 
 # Logs
 *.log
