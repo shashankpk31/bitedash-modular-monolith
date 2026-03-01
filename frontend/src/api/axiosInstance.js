@@ -4,7 +4,7 @@ import { ERR } from '../config/errMsgConstants';
 import { LOCL_STRG_KEY } from '../config/constants';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8089',
+  baseURL: import.meta.env.VITE_API_BASE_URL || '',
   headers: { 'Content-Type': 'application/json' }
 });
 
