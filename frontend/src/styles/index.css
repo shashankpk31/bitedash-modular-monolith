@@ -1,11 +1,13 @@
 /* src/styles/index.css */
+
+/* Import design system */
+@import './theme.css';
+@import './animations.css';
+
+/* Tailwind CSS */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-body {
-  @apply bg-gray-50 text-slate-900;
-}
 
 @layer utilities {
   /* Hide scrollbar for Chrome, Safari and Opera */

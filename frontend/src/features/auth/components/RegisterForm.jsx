@@ -7,7 +7,7 @@ import {Button} from "../../../components/ui/Button";
 import AuthToggle from "../../../components/ui/Toggle/AuthToggle";
 import EmployeeFields from "./forms/EmployeeFields";
 import VendorFields from "./forms/VendorFields";
-import {authService} from "../services/authService";
+import authService from "../../../services/authService";
 import { organizationService } from "../../../services/organizationService";
 
 const RegisterForm = ({ onSwitchToLogin, onBack }) => {

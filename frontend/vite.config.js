@@ -44,10 +44,17 @@ export default defineConfig({
         ],
         shortcuts: [
           {
-            name: 'Browse Vendors',
-            short_name: 'Vendors',
-            description: 'Browse available food vendors',
-            url: '/employee/home',
+            name: 'Order Food',
+            short_name: 'Order',
+            description: 'Browse menu and order food',
+            url: '/employee/menu',
+            icons: [{ src: 'pwa-192x192.png', sizes: '192x192' }]
+          },
+          {
+            name: 'My Orders',
+            short_name: 'Orders',
+            description: 'View order history',
+            url: '/employee/orders',
             icons: [{ src: 'pwa-192x192.png', sizes: '192x192' }]
           },
           {
@@ -67,19 +74,37 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
 
         runtimeCaching: [
-          // API endpoints - Network first with fallback
+          // API endpoints - Network first with fallback (no /api prefix for modular monolith)
           {
-            urlPattern: /^https?:\/\/.*\/api\/.*$/,
+            urlPattern: /^http:\/\/localhost:8080\/(auth|menus|orders|wallet|organization|inventory)\/.*$/,
             handler: 'NetworkFirst',
             options: {
               cacheName: 'api-cache',
+              networkTimeoutSeconds: 10,
               expiration: {
                 maxEntries: 100,
-                maxAgeSeconds: 60 * 5 // 5 minutes
+                maxAgeSeconds: 60 * 60 // 1 hour
               },
-              networkTimeoutSeconds: 10,
               cacheableResponse: {
                 statuses: [0, 200]
+              },
+              backgroundSync: {
+                name: 'biteDashModularQueue',
+                options: {
+                  maxRetentionTime: 60 * 24 // 24 hours
+                }
+              }
+            }
+          },
+          // Menu data - Cache first for offline browsing
+          {
+            urlPattern: /^http:\/\/localhost:8080\/menus\/.*$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'menu-cache',
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 24 // 24 hours
               }
             }
           },

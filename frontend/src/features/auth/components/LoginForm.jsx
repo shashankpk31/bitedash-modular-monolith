@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
-import { authService } from "../services/authService";
+import authService from "../../../services/authService";
 import Input from "../../../components/ui/Input";
 import { Button } from "../../../components/ui/Button";
 import toast from "react-hot-toast"; 

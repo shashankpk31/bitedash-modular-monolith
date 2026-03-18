@@ -4,7 +4,7 @@ import { ShieldCheck, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
-import {register} from '../../auth/services/authService'
+import authService from '../../../services/authService';
 
 const AdminRegister = () => {
   const navigate = useNavigate();
@@ -29,7 +29,7 @@ const AdminRegister = () => {
     };
     
     console.log("Registering Admin:", payload);
-    register(payload)
+    authService.register(payload)
   };
 
   return (

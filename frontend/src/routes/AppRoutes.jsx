@@ -6,27 +6,38 @@ import { LayoutDashboard, Building2, MapPin, CheckCircle, Store, ShoppingCart, P
 
 import DashboardLayout from "../layouts/DashboardLayout";
 
-import LandingPage from "../features/home/pages/LandingPage";
-import SuperAdminOverview from "../features/admin/pages/SuperAdminOverview";
+// Landing & Auth
+import ResponsiveLanding from "../features/home/pages/ResponsiveLanding";
+import LoginMobile from "../features/auth/pages/LoginMobile";
+import UnifiedRegister from "../features/auth/pages/UnifiedRegister";
+
+// Super Admin Pages (NEW)
+import SuperAdminDashboardNew from "../features/admin/pages/SuperAdminDashboardNew";
 import OrganizationManager from "../features/admin/pages/OrganizationManager";
-import ApprovalDashboard from "../features/org-admin/pages/ApprovalDashboard";
-import OrgDashboard from "../features/org-admin/pages/OrgDashboard";
+
+// Org Admin Pages
+import OrgAdminDashboardNew from "../features/org-admin/pages/OrgAdminDashboardNew";
+import OrganizationRegistration from "../features/org-admin/pages/OrganizationRegistration";
+import ApprovalDashboardPage from "../features/org-admin/pages/ApprovalDashboardPage";
 import LocationManager from "../features/org-admin/pages/LocationManager";
 import LocationDetails from "../features/org-admin/pages/LocationDetails";
 
 // Vendor Pages
-import VendorDashboard from "../features/vendor/pages/Dashboard";
+import VendorDashboard from "../features/vendor/pages/VendorDashboard";
+import MenuManagementPage from "../features/vendor/pages/MenuManagementPage";
+import VendorRegistration from "../features/vendor/pages/VendorRegistration";
 import LiveOrders from "../features/vendor/pages/LiveOrders";
-import MenuManagement from "../features/vendor/pages/MenuManagement";
 import QRScanner from "../features/vendor/pages/QRScanner";
 
 // Employee Pages
-import EmployeeHome from "../features/employee/pages/Home";
+import MenuHomePage from "../features/employee/pages/MenuHomePage";
+import CartPage from "../features/employee/pages/CartPage";
+import OrderConfirmationPage from "../features/employee/pages/OrderConfirmationPage";
+import OrderHistoryPage from "../features/employee/pages/OrderHistoryPage";
+import WalletPage from "../features/employee/pages/WalletPage";
 import Welcome from "../features/employee/pages/Welcome";
-import Cart from "../features/employee/pages/Cart";
 import Tracking from "../features/employee/pages/Tracking";
 import VendorDetail from "../features/employee/pages/VendorDetail";
-import EmployeeWallet from "../features/employee/pages/Wallet";
 
 const AppRoutes = () => {
   const superAdminNav = [
@@ -103,8 +114,11 @@ const AppRoutes = () => {
 
   return (
     <Routes>
-      {}
-      <Route path="/" element={<LandingPage />} />
+      {/* Public Routes */}
+      <Route path="/" element={<ResponsiveLanding />} />
+      <Route path="/login" element={<LoginMobile />} />
+      <Route path="/register" element={<UnifiedRegister />} />
+      <Route path="/register/organization" element={<OrganizationRegistration />} />
 
       {}
       <Route element={<ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN]} />}>
@@ -116,7 +130,7 @@ const AppRoutes = () => {
             />
           }
         >
-          <Route path="admin/dashboard" element={<SuperAdminOverview />} />
+          <Route path="admin/dashboard" element={<SuperAdminDashboardNew />} />
           <Route path="admin/organizations" element={<OrganizationManager />} />
           {}
           <Route
@@ -136,10 +150,10 @@ const AppRoutes = () => {
             />
           }
         >
-          <Route path="org-admin/dashboard" element={<OrgDashboard />} />
+          <Route path="org-admin/dashboard" element={<OrgAdminDashboardNew />} />
           <Route path="org-admin/locations" element={<LocationManager />} />
           <Route path="org-admin/locations/:locationId" element={<LocationDetails />} />
-          <Route path="org-admin/approvals" element={<ApprovalDashboard />} />
+          <Route path="org-admin/approvals" element={<ApprovalDashboardPage />} />
           <Route
             path="org-admin"
             element={<Navigate to="/org-admin/dashboard" replace />}
@@ -159,7 +173,7 @@ const AppRoutes = () => {
         >
           <Route path="vendor/dashboard" element={<VendorDashboard />} />
           <Route path="vendor/orders" element={<LiveOrders />} />
-          <Route path="vendor/menu" element={<MenuManagement />} />
+          <Route path="vendor/menu" element={<MenuManagementPage />} />
           <Route path="vendor/qr-scanner" element={<QRScanner />} />
           <Route
             path="vendor"
@@ -181,14 +195,18 @@ const AppRoutes = () => {
             />
           }
         >
-          <Route path="employee/home" element={<EmployeeHome />} />
-          <Route path="employee/cart" element={<Cart />} />
+          <Route path="employee/menu" element={<MenuHomePage />} />
+          <Route path="employee/cart" element={<CartPage />} />
+          <Route path="employee/orders" element={<OrderHistoryPage />} />
+          <Route path="employee/orders/:orderId" element={<OrderConfirmationPage />} />
+          <Route path="employee/wallet" element={<WalletPage />} />
           <Route path="employee/tracking" element={<Tracking />} />
-          <Route path="employee/wallet" element={<EmployeeWallet />} />
           <Route path="employee/vendor/:vendorId" element={<VendorDetail />} />
+          {/* Legacy route redirect */}
+          <Route path="employee/home" element={<Navigate to="/employee/menu" replace />} />
           <Route
             path="employee"
-            element={<Navigate to="/employee/home" replace />}
+            element={<Navigate to="/employee/menu" replace />}
           />
         </Route>
       </Route>

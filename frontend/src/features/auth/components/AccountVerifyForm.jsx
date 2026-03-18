@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Mail, Phone, RefreshCcw, ArrowLeft } from "lucide-react";
-import { authService } from "../services/authService";
+import authService from "../../../services/authService";
 import { Button } from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
 import toast from "react-hot-toast";

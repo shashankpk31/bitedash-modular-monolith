@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Star, Loader2, MessageSquare } from 'lucide-react';
 import Modal from '../../../components/ui/Modal';
-import orderService from '../../employee/services/orderService';
+import orderService from '../../../services/orderService';
 import toast from 'react-hot-toast';
 
 const OrderRatingModal = ({ isOpen, onClose, order }) => {

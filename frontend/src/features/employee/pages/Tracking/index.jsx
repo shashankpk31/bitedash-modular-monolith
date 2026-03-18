@@ -16,7 +16,7 @@ import {
   WifiOff
 } from "lucide-react";
 import { useOrderNotifications } from "../../../../context/OrderNotificationContext";
-import orderService from "../../services/orderService";
+import orderService from "../../../../services/orderService";
 import OrderStepper from "../../components/OrderStepper";
 import OrderRatingModal from "../../../shared/components/OrderRatingModal";
 import toast from "react-hot-toast";

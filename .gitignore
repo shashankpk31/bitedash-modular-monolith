@@ -21,6 +21,8 @@ bitedash-modular-backend/*/target/
 # Logs
 *.log
 logs/
+stitch/
+qwen.sh
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
