@@ -1,154 +1,158 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import Icon from '../../../components/ui/Icon';
-import SearchBar from '../../../components/ui/SearchBar';
-import Badge from '../../../components/ui/Badge';
-import Spinner from '../../../components/ui/Spinner';
+import { Clock, ShoppingBag, Filter } from 'lucide-react';
 import { motion } from 'framer-motion';
-import orderService from '../../../services/orderService';
+import Button from '../../../common/components/Button';
+import { StatusBadge } from '../../../common/components/Badge';
+import { ContentLoader } from '../../../common/components/Spinner';
+import { useMyOrders } from '../../../services/queries/order.queries';
+import { formatCurrency, formatDateTime, formatRelativeTime } from '../../../common/utils';
+import { ORDER_STATUS } from '../../../config/constants';
 
+// Order History Page - Shows past orders with filters
+// Why? Allows users to track previous orders and reorder
 const OrderHistoryPage = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('all');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
-  const { data: orders = [], isLoading } = useQuery({
-    queryKey: ['orders', 'my-orders'],
-    queryFn: orderService.getMyOrders,
-    staleTime: 30 * 1000,
-  });
+  // Fetch orders with filter
+  const params = statusFilter !== 'all' ? { status: statusFilter } : {};
+  const { data: orders, isLoading } = useMyOrders(params);
 
-  const tabs = [
-    { key: 'all', label: 'All Orders' },
-    { key: 'ongoing', label: 'Ongoing' },
-    { key: 'drafts', label: 'Drafts' },
+  // Status filter options
+  const filters = [
+    { value: 'all', label: 'All Orders' },
+    { value: ORDER_STATUS.PENDING, label: 'Pending' },
+    { value: ORDER_STATUS.CONFIRMED, label: 'Confirmed' },
+    { value: ORDER_STATUS.PREPARING, label: 'Preparing' },
+    { value: ORDER_STATUS.READY, label: 'Ready' },
+    { value: ORDER_STATUS.COMPLETED, label: 'Completed' },
+    { value: ORDER_STATUS.CANCELLED, label: 'Cancelled' },
   ];
 
-  const getStatusVariant = (status) => {
-    const variants = {
-      COMPLETED: 'completed',
-      CANCELLED: 'cancelled',
-      PREPARING: 'preparing',
-      READY: 'ready',
-      NEW: 'new',
-    };
-    return variants[status] || 'default';
-  };
-
-  const filteredOrders = orders.filter(order => {
-    const matchesSearch =
-      order.orderNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.vendorName?.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesTab =
-      activeTab === 'all' ? true :
-      activeTab === 'ongoing' ? ['NEW', 'PREPARING', 'READY'].includes(order.status) :
-      activeTab === 'drafts' ? order.status === 'DRAFT' : true;
-
-    return matchesSearch && matchesTab;
-  });
-
   return (
-    <div className="min-h-screen bg-background-light dark:bg-background-dark pb-24">
+    <div className="min-h-full">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div className="px-4 py-4 flex items-center justify-between">
-          <button
-            onClick={() => navigate(-1)}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-          >
-            <Icon name="arrow_back" />
-          </button>
-          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Order History</h1>
-          <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-            <Icon name="filter_list" />
-          </button>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex border-b border-gray-200 dark:border-gray-700">
-          {tabs.map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`flex-1 py-3 text-sm font-semibold transition-colors ${
-                activeTab === tab.key
-                  ? 'text-primary border-b-2 border-primary'
-                  : 'text-gray-500 dark:text-gray-400'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      </header>
-
-      {/* Search */}
-      <div className="px-4 py-4">
-        <SearchBar
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          onClear={() => setSearchTerm('')}
-          placeholder="Search by Order ID or Vendor"
-        />
+      <div className="p-4 bg-surface-container-low border-b border-outline-variant/15">
+        <h1 className="font-headline text-display-sm text-on-surface">Order History</h1>
+        <p className="text-body-sm text-on-surface-variant mt-1">
+          View and track your orders
+        </p>
       </div>
 
-      {/* Recent Activity Header */}
-      <div className="px-4 flex items-center justify-between mb-4">
-        <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Recent Activity</h2>
-        <span className="text-sm text-gray-500 dark:text-gray-400">Last 30 days</span>
+      {/* Filters */}
+      <div className="p-4 border-b border-outline-variant/15">
+        <div className="flex items-center gap-2 mb-3">
+          <Filter size={16} className="text-on-surface-variant" />
+          <span className="text-label-md text-on-surface-variant">Filter by status</span>
+        </div>
+        <div className="overflow-x-auto no-scrollbar -mx-4 px-4">
+          <div className="flex gap-2" style={{ width: 'max-content' }}>
+            {filters.map(filter => (
+              <button
+                key={filter.value}
+                onClick={() => setStatusFilter(filter.value)}
+                className={`px-4 py-2 rounded-full text-label-md font-semibold transition-colors whitespace-nowrap ${
+                  statusFilter === filter.value
+                    ? 'bg-primary text-on-primary'
+                    : 'bg-surface-container text-on-surface hover:bg-surface-container-high'
+                }`}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Orders List */}
-      <div className="px-4 space-y-3">
-        {isLoading ? (
-          <div className="flex justify-center py-12">
-            <Spinner size="lg" />
-          </div>
-        ) : filteredOrders.length === 0 ? (
-          <div className="text-center py-12">
-            <Icon name="inbox" size={48} className="text-gray-300 mx-auto mb-2" />
-            <p className="text-gray-500 dark:text-gray-400">No orders found</p>
-          </div>
-        ) : (
-          filteredOrders.map((order) => (
-            <motion.div
-              key={order.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white dark:bg-gray-800 rounded-xl p-4 cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => navigate(`/employee/orders/${order.id}`)}
-            >
-              <div className="flex items-start gap-3 mb-3">
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <Icon name="restaurant" className="text-primary" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-1">
-                    <h3 className="font-bold text-gray-900 dark:text-gray-100 truncate">
-                      {order.vendorName || 'Vendor'}
-                    </h3>
-                    <Badge variant={getStatusVariant(order.status)} size="sm">
-                      {order.status}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {new Date(order.createdAt).toLocaleDateString()} • {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </p>
-                </div>
-              </div>
+      <div className="p-4 space-y-3">
+        {/* Loading */}
+        {isLoading && <ContentLoader message="Loading orders..." />}
 
-              <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
-                <span className="text-sm text-gray-500 dark:text-gray-400">
-                  ORDER ID <span className="text-gray-900 dark:text-gray-100 font-semibold">#{order.orderNumber || order.id}</span>
-                </span>
-                <span className="text-lg font-bold text-primary">
-                  ${(order.totalAmount || 0).toFixed(2)}
-                </span>
-              </div>
-            </motion.div>
-          ))
+        {/* Empty State */}
+        {!isLoading && (!orders || orders.length === 0) && (
+          <div className="text-center py-12 space-y-4">
+            <div className="w-20 h-20 mx-auto rounded-2xl bg-surface-container flex items-center justify-center">
+              <ShoppingBag size={40} className="text-on-surface-variant opacity-40" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="font-headline text-headline-sm text-on-surface">
+                {statusFilter === 'all' ? 'No Orders Yet' : 'No Orders Found'}
+              </h3>
+              <p className="text-body-md text-on-surface-variant max-w-sm mx-auto">
+                {statusFilter === 'all'
+                  ? 'Start ordering delicious food from your favorite vendors'
+                  : 'Try selecting a different status filter'}
+              </p>
+            </div>
+            {statusFilter === 'all' && (
+              <Button
+                variant="primary"
+                onClick={() => navigate('/employee/menu')}
+              >
+                Browse Menu
+              </Button>
+            )}
+          </div>
+        )}
+
+        {/* Orders */}
+        {!isLoading && orders && orders.length > 0 && (
+          <div className="space-y-3">
+            {orders.map(order => (
+              <motion.button
+                key={order.id}
+                onClick={() => navigate(`/employee/orders/${order.id}`)}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+                className="w-full bg-surface-container-lowest rounded-xl p-4 shadow-card hover:shadow-ambient transition-all text-left"
+              >
+                {/* Header */}
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-headline text-body-lg text-on-surface">
+                        Order #{order.id}
+                      </span>
+                      <StatusBadge status={order.status} size="sm" />
+                    </div>
+                    <div className="text-label-sm text-on-surface-variant">
+                      {formatRelativeTime(order.createdAt)}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-headline text-headline-sm text-primary">
+                      {formatCurrency(order.totalAmount)}
+                    </div>
+                    {order.itemCount && (
+                      <div className="text-label-sm text-on-surface-variant mt-1">
+                        {order.itemCount} item{order.itemCount !== 1 ? 's' : ''}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Vendor Info */}
+                <div className="flex items-center gap-2 text-body-sm text-on-surface-variant">
+                  <ShoppingBag size={14} />
+                  <span>{order.vendorName || 'Vendor'}</span>
+                </div>
+
+                {/* ETA (if applicable) */}
+                {(order.status === ORDER_STATUS.PREPARING || order.status === ORDER_STATUS.READY) && order.estimatedTime && (
+                  <div className="mt-3 px-3 py-2 bg-primary/10 rounded-lg flex items-center gap-2">
+                    <Clock size={14} className="text-primary" />
+                    <span className="text-label-sm text-primary font-semibold">
+                      {order.status === ORDER_STATUS.READY
+                        ? 'Ready for pickup!'
+                        : `Ready in ~${order.estimatedTime} min`}
+                    </span>
+                  </div>
+                )}
+              </motion.button>
+            ))}
+          </div>
         )}
       </div>
     </div>

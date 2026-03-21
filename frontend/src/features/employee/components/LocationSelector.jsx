@@ -1,265 +1,269 @@
-import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { MapPin, Building2, Home, Loader2, ChevronRight } from 'lucide-react';
-import toast from 'react-hot-toast';
-import api from '../../../api/axiosInstance';
+import { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
+import { MapPin, Building2, Store, Utensils, ChevronRight, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import Button from '../../../common/components/Button';
+import { ContentLoader } from '../../../common/components/Spinner';
+import { useLocation } from '../../../contexts';
+import {
+  useLocations,
+  useOffices,
+  useCafeterias,
+  useVendors,
+} from '../../../services/queries/organization.queries';
+import { useAuth } from '../../../contexts';
 
-const LocationSelector = ({ onComplete }) => {
+// Location Selector Component - 4-level hierarchy
+// Why? Employees need to select: Location → Office → Cafeteria → Vendor
+const LocationSelector = ({ onComplete, showVendorSelection = true }) => {
+  const { user } = useAuth();
+  const {
+    selectedLocation,
+    selectedOffice,
+    selectedCafeteria,
+    selectedVendor,
+    setLocation,
+    setOffice,
+    setCafeteria,
+    setVendor,
+    clearLocation,
+  } = useLocation();
+
+  // Current selection step
   const [step, setStep] = useState(1);
-  const [selectedOrg, setSelectedOrg] = useState(null);
-  const [selectedOffice, setSelectedOffice] = useState(null);
-  const [selectedCafeteria, setSelectedCafeteria] = useState(null);
 
-  // Fetch organizations
-  const { data: organizations, isLoading: loadingOrgs } = useQuery({
-    queryKey: ['organizations'],
-    queryFn: async () => {
-      const response = await api.get('/organization/public');
-      return response.data.data || [];
-    },
-    retry: 1,
-  });
+  // Fetch data for each level
+  const { data: locations, isLoading: locationsLoading } = useLocations(user?.organizationId);
+  const { data: offices, isLoading: officesLoading } = useOffices(selectedLocation?.id);
+  const { data: cafeterias, isLoading: cafeteriasLoading } = useCafeterias(selectedOffice?.id);
+  const { data: vendors, isLoading: vendorsLoading } = useVendors(selectedCafeteria?.id);
 
-  // Fetch offices for selected organization
-  const { data: offices, isLoading: loadingOffices } = useQuery({
-    queryKey: ['offices', selectedOrg?.id],
-    queryFn: async () => {
-      const response = await api.get(`/organisation/offices/organization/${selectedOrg.id}`);
-      return response.data.data || [];
-    },
-    enabled: !!selectedOrg && step === 2,
-    retry: 1,
-  });
+  // Auto-advance to next step when selection is made
+  useEffect(() => {
+    if (selectedLocation && !selectedOffice && offices?.length > 0) {
+      setStep(2);
+    } else if (selectedOffice && !selectedCafeteria && cafeterias?.length > 0) {
+      setStep(3);
+    } else if (selectedCafeteria && !selectedVendor && vendors?.length > 0 && showVendorSelection) {
+      setStep(4);
+    }
+  }, [selectedLocation, selectedOffice, selectedCafeteria, selectedVendor, offices, cafeterias, vendors, showVendorSelection]);
 
-  // Fetch cafeterias for selected office
-  const { data: cafeterias, isLoading: loadingCafeterias } = useQuery({
-    queryKey: ['cafeterias', selectedOffice?.id],
-    queryFn: async () => {
-      const response = await api.get(`/organisation/cafeterias/office/${selectedOffice.id}`);
-      return response.data.data || [];
-    },
-    enabled: !!selectedOffice && step === 3,
-    retry: 1,
-  });
-
-  const handleOrgSelect = (org) => {
-    setSelectedOrg(org);
-    setStep(2);
+  // Handle selection at each level
+  const handleLocationSelect = (location) => {
+    setLocation(location);
   };
 
   const handleOfficeSelect = (office) => {
-    setSelectedOffice(office);
-    setStep(3);
+    setOffice(office);
   };
 
   const handleCafeteriaSelect = (cafeteria) => {
-    setSelectedCafeteria(cafeteria);
-
-    // Call onComplete with all selected data
-    onComplete({
-      organizationId: selectedOrg.id,
-      organizationName: selectedOrg.name,
-      officeId: selectedOffice.id,
-      officeName: selectedOffice.name,
-      cafeteriaId: cafeteria.id,
-      cafeteriaName: cafeteria.name,
-    });
+    setCafeteria(cafeteria);
   };
 
-  const handleBack = () => {
-    if (step === 2) {
-      setSelectedOrg(null);
-      setStep(1);
-    } else if (step === 3) {
-      setSelectedOffice(null);
-      setStep(2);
+  const handleVendorSelect = (vendor) => {
+    setVendor(vendor);
+    if (onComplete) {
+      onComplete({ location: selectedLocation, office: selectedOffice, cafeteria: selectedCafeteria, vendor });
     }
   };
 
-  // Render loading state
-  const renderLoading = (message) => (
-    <div className="flex flex-col items-center justify-center py-12">
-      <Loader2 className="animate-spin text-brand-primary mb-4" size={40} />
-      <p className="text-gray-600">{message}</p>
-    </div>
-  );
-
-  // Render empty state
-  const renderEmpty = (message) => (
-    <div className="text-center py-12">
-      <MapPin className="text-gray-400 mx-auto mb-4" size={48} />
-      <p className="text-gray-600">{message}</p>
-    </div>
-  );
-
-  // Render organization selection
-  const renderOrganizations = () => {
-    if (loadingOrgs) return renderLoading('Loading organizations...');
-    if (!organizations || organizations.length === 0)
-      return renderEmpty('No organizations available');
-
-    return (
-      <div className="space-y-3">
-        {organizations.map((org) => (
-          <button
-            key={org.id}
-            onClick={() => handleOrgSelect(org)}
-            className="w-full bg-white border border-gray-200 rounded-2xl p-4 hover:border-brand-primary hover:shadow-md transition-all text-left group"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
-                  <Building2 className="text-white" size={24} />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900 group-hover:text-brand-primary transition-colors">
-                    {org.name}
-                  </h3>
-                  {org.address && (
-                    <p className="text-sm text-gray-600">{org.address}</p>
-                  )}
-                </div>
-              </div>
-              <ChevronRight className="text-gray-400 group-hover:text-brand-primary transition-colors" size={20} />
-            </div>
-          </button>
-        ))}
-      </div>
-    );
+  // Handle completion without vendor selection
+  const handleComplete = () => {
+    if (onComplete) {
+      onComplete({ location: selectedLocation, office: selectedOffice, cafeteria: selectedCafeteria, vendor: selectedVendor });
+    }
   };
 
-  // Render office selection
-  const renderOffices = () => {
-    if (loadingOffices) return renderLoading('Loading offices...');
-    if (!offices || offices.length === 0)
-      return renderEmpty('No offices available for this organization');
-
-    return (
-      <div className="space-y-3">
-        {offices.map((office) => (
-          <button
-            key={office.id}
-            onClick={() => handleOfficeSelect(office)}
-            className="w-full bg-white border border-gray-200 rounded-2xl p-4 hover:border-brand-primary hover:shadow-md transition-all text-left group"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center">
-                  <Home className="text-white" size={24} />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900 group-hover:text-brand-primary transition-colors">
-                    {office.name}
-                  </h3>
-                  {office.address && (
-                    <p className="text-sm text-gray-600">{office.address}</p>
-                  )}
-                </div>
-              </div>
-              <ChevronRight className="text-gray-400 group-hover:text-brand-primary transition-colors" size={20} />
-            </div>
-          </button>
-        ))}
-      </div>
-    );
-  };
-
-  // Render cafeteria selection
-  const renderCafeterias = () => {
-    if (loadingCafeterias) return renderLoading('Loading cafeterias...');
-    if (!cafeterias || cafeterias.length === 0)
-      return renderEmpty('No cafeterias available at this office');
-
-    return (
-      <div className="space-y-3">
-        {cafeterias.map((cafeteria) => (
-          <button
-            key={cafeteria.id}
-            onClick={() => handleCafeteriaSelect(cafeteria)}
-            className="w-full bg-white border border-gray-200 rounded-2xl p-4 hover:border-brand-primary hover:shadow-md transition-all text-left group"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center">
-                  <MapPin className="text-white" size={24} />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900 group-hover:text-brand-primary transition-colors">
-                    {cafeteria.name}
-                  </h3>
-                  {cafeteria.openingTime && cafeteria.closingTime && (
-                    <p className="text-sm text-gray-600">
-                      {cafeteria.openingTime} - {cafeteria.closingTime}
-                    </p>
-                  )}
-                </div>
-              </div>
-              <ChevronRight className="text-gray-400 group-hover:text-brand-primary transition-colors" size={20} />
-            </div>
-          </button>
-        ))}
-      </div>
-    );
-  };
-
-  return (
-    <div className="max-w-2xl mx-auto">
-      {/* Progress Steps */}
-      <div className="flex items-center justify-center mb-8">
-        {[1, 2, 3].map((num) => (
-          <React.Fragment key={num}>
-            <div
-              className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-colors ${
-                step >= num
-                  ? 'bg-brand-primary text-white'
-                  : 'bg-gray-200 text-gray-500'
-              }`}
-            >
-              {num}
-            </div>
-            {num < 3 && (
-              <div
-                className={`w-12 h-1 mx-2 transition-colors ${
-                  step > num ? 'bg-brand-primary' : 'bg-gray-200'
-                }`}
-              />
-            )}
-          </React.Fragment>
-        ))}
+  // Selection step component
+  const SelectionStep = ({ title, icon: Icon, items, isLoading, onSelect, selectedItem, emptyMessage }) => (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="space-y-4"
+    >
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+          <Icon size={20} className="text-primary" />
+        </div>
+        <div>
+          <h3 className="font-headline text-headline-sm text-on-surface">{title}</h3>
+          <p className="text-label-sm text-on-surface-variant">Select from available options</p>
+        </div>
       </div>
 
-      {/* Step Header */}
-      <div className="text-center mb-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          {step === 1 && 'Select Your Organization'}
-          {step === 2 && 'Select Your Office'}
-          {step === 3 && 'Select Your Cafeteria'}
-        </h2>
-        <p className="text-gray-600">
-          {step === 1 && 'Choose your company to get started'}
-          {step === 2 && 'Where do you work?'}
-          {step === 3 && 'Where would you like to order from?'}
-        </p>
-      </div>
+      {/* Loading state */}
+      {isLoading && <ContentLoader message="Loading options..." />}
 
-      {/* Back Button */}
-      {step > 1 && (
-        <button
-          onClick={handleBack}
-          className="mb-4 text-gray-600 hover:text-gray-900 font-medium flex items-center"
-        >
-          ← Back
-        </button>
+      {/* Empty state */}
+      {!isLoading && items?.length === 0 && (
+        <div className="text-center py-8">
+          <p className="text-body-md text-on-surface-variant">{emptyMessage}</p>
+        </div>
       )}
 
-      {/* Content */}
-      <div>
-        {step === 1 && renderOrganizations()}
-        {step === 2 && renderOffices()}
-        {step === 3 && renderCafeterias()}
-      </div>
+      {/* Items list */}
+      {!isLoading && items?.length > 0 && (
+        <div className="grid grid-cols-1 gap-3">
+          {items.map((item) => {
+            const isSelected = selectedItem?.id === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => onSelect(item)}
+                className={`p-4 rounded-xl border-2 transition-all text-left flex items-center justify-between ${
+                  isSelected
+                    ? 'border-primary bg-primary/5'
+                    : 'border-outline-variant hover:border-outline hover:bg-surface-container-low'
+                }`}
+              >
+                <div>
+                  <div className="font-headline text-body-lg text-on-surface">
+                    {item.name}
+                  </div>
+                  {item.description && (
+                    <div className="text-label-sm text-on-surface-variant mt-1">
+                      {item.description}
+                    </div>
+                  )}
+                  {item.address && (
+                    <div className="text-label-sm text-on-surface-variant mt-1">
+                      {item.address}
+                    </div>
+                  )}
+                </div>
+                <ChevronRight size={20} className={isSelected ? 'text-primary' : 'text-on-surface-variant'} />
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </motion.div>
+  );
+
+  return (
+    <div className="space-y-6">
+      {/* Breadcrumb - shows current selection path */}
+      {(selectedLocation || selectedOffice || selectedCafeteria || selectedVendor) && (
+        <div className="flex items-center gap-2 flex-wrap">
+          {selectedLocation && (
+            <>
+              <Button variant="ghost" size="sm" onClick={() => { setStep(1); setLocation(null); }}>
+                {selectedLocation.name}
+              </Button>
+              {selectedOffice && <ChevronRight size={16} className="text-on-surface-variant" />}
+            </>
+          )}
+          {selectedOffice && (
+            <>
+              <Button variant="ghost" size="sm" onClick={() => { setStep(2); setOffice(null); }}>
+                {selectedOffice.name}
+              </Button>
+              {selectedCafeteria && <ChevronRight size={16} className="text-on-surface-variant" />}
+            </>
+          )}
+          {selectedCafeteria && (
+            <>
+              <Button variant="ghost" size="sm" onClick={() => { setStep(3); setCafeteria(null); }}>
+                {selectedCafeteria.name}
+              </Button>
+              {selectedVendor && showVendorSelection && <ChevronRight size={16} className="text-on-surface-variant" />}
+            </>
+          )}
+          {selectedVendor && showVendorSelection && (
+            <Button variant="ghost" size="sm">
+              {selectedVendor.name}
+            </Button>
+          )}
+          <button
+            onClick={clearLocation}
+            className="ml-auto p-2 rounded-lg hover:bg-surface-container transition-colors"
+          >
+            <X size={16} className="text-on-surface-variant" />
+          </button>
+        </div>
+      )}
+
+      {/* Selection steps */}
+      <AnimatePresence mode="wait">
+        {/* Step 1: Location */}
+        {step === 1 && (
+          <SelectionStep
+            key="location"
+            title="Select Location"
+            icon={MapPin}
+            items={locations}
+            isLoading={locationsLoading}
+            onSelect={handleLocationSelect}
+            selectedItem={selectedLocation}
+            emptyMessage="No locations available"
+          />
+        )}
+
+        {/* Step 2: Office */}
+        {step === 2 && selectedLocation && (
+          <SelectionStep
+            key="office"
+            title="Select Office"
+            icon={Building2}
+            items={offices}
+            isLoading={officesLoading}
+            onSelect={handleOfficeSelect}
+            selectedItem={selectedOffice}
+            emptyMessage="No offices available at this location"
+          />
+        )}
+
+        {/* Step 3: Cafeteria */}
+        {step === 3 && selectedOffice && (
+          <SelectionStep
+            key="cafeteria"
+            title="Select Cafeteria"
+            icon={Store}
+            items={cafeterias}
+            isLoading={cafeteriasLoading}
+            onSelect={handleCafeteriaSelect}
+            selectedItem={selectedCafeteria}
+            emptyMessage="No cafeterias available at this office"
+          />
+        )}
+
+        {/* Step 4: Vendor (optional) */}
+        {step === 4 && selectedCafeteria && showVendorSelection && (
+          <SelectionStep
+            key="vendor"
+            title="Select Vendor"
+            icon={Utensils}
+            items={vendors}
+            isLoading={vendorsLoading}
+            onSelect={handleVendorSelect}
+            selectedItem={selectedVendor}
+            emptyMessage="No vendors available at this cafeteria"
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Complete button (if vendor selection is optional) */}
+      {selectedCafeteria && !showVendorSelection && (
+        <Button
+          variant="primary"
+          size="lg"
+          fullWidth
+          onClick={handleComplete}
+        >
+          Continue
+        </Button>
+      )}
     </div>
   );
+};
+
+LocationSelector.propTypes = {
+  onComplete: PropTypes.func,
+  showVendorSelection: PropTypes.bool,
 };
 
 export default LocationSelector;

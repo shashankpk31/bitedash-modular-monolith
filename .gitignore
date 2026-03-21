@@ -93,3 +93,5 @@ CLAUDE.md
 ignore/
 health_doc/
 .metadata
+*.md
+last-session

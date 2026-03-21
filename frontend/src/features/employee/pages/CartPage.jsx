@@ -1,239 +1,294 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '../../../context/AuthContext';
-import { useCart } from '../../../context/CartContext';
-import Icon from '../../../components/ui/Icon';
-import Button from '../../../components/ui/Button';
-import Spinner from '../../../components/ui/Spinner';
+import { ShoppingCart, Trash2, Plus, Minus, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import toast from 'react-hot-toast';
-import walletService from '../../../services/walletService';
-import orderService from '../../../services/orderService';
+import Button from '../../../common/components/Button';
+import { ConfirmModal } from '../../../common/components/Modal';
+import { useCart } from '../../../contexts';
+import { useMyWallet } from '../../../services/queries/wallet.queries';
+import { useCreateOrder } from '../../../services/queries/order.queries';
+import { formatCurrency } from '../../../common/utils';
 
+// Cart Page - Review and checkout
+// Why? Critical step before order placement
 const CartPage = () => {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const { user } = useAuth();
-  const { items, updateQuantity, removeItem, clearCart, total, subtotal, tax, itemCount } = useCart();
-  const [couponCode, setCouponCode] = useState('');
-  const [instructions, setInstructions] = useState('');
-  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const {
+    cartItems,
+    cartTotals,
+    isEmpty,
+    vendorId,
+    locationContext,
+    updateQuantity,
+    removeFromCart,
+    clearCart,
+  } = useCart();
 
-  const { data: wallet } = useQuery({
-    queryKey: ['wallet'],
-    queryFn: walletService.getMyWallet,
-  });
+  const { data: wallet } = useMyWallet();
+  const createOrderMutation = useCreateOrder();
 
-  const createOrderMutation = useMutation({
-    mutationFn: (orderData) => orderService.createOrder(orderData),
-    onSuccess: (order) => {
-      clearCart();
-      queryClient.invalidateQueries(['orders']);
-      queryClient.invalidateQueries(['wallet']);
-      navigate(`/employee/orders/${order.id}`);
-    },
-    onError: (error) => {
-      toast.error(error.response?.data?.message || 'Failed to place order');
-    },
-  });
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [itemToRemove, setItemToRemove] = useState(null);
 
-  const handleApplyCoupon = () => {
-    if (!couponCode.trim()) {
-      toast.error('Please enter a coupon code');
-      return;
+  // Check if user has sufficient balance
+  const hasSufficientBalance = wallet?.balance >= cartTotals.total;
+
+  // Handle quantity change
+  const handleQuantityChange = (itemId, newQuantity) => {
+    if (newQuantity <= 0) {
+      setItemToRemove(itemId);
+    } else {
+      updateQuantity(itemId, newQuantity);
     }
-    // TODO: Validate coupon via API when endpoint available
-    setAppliedCoupon({ code: couponCode, discount: 10 });
-    toast.success('Coupon applied! 10% off');
   };
 
-  const walletDeduction = Math.min(wallet?.balance || 0, total);
-  const finalTotal = total - walletDeduction;
+  // Handle item removal
+  const handleRemoveItem = () => {
+    if (itemToRemove) {
+      removeFromCart(itemToRemove);
+      setItemToRemove(null);
+    }
+  };
 
-  const handleConfirmOrder = () => {
-    if (items.length === 0) {
-      toast.error('Your cart is empty');
+  // Handle checkout
+  const handleCheckout = () => {
+    if (!hasSufficientBalance) {
       return;
     }
 
-    if (finalTotal > 0 && finalTotal > (wallet?.balance || 0)) {
-      toast.error('Insufficient wallet balance');
-      return;
-    }
-
+    // Prepare order data - MUST match OrderRequest.java
     const orderData = {
-      vendorId: items[0].vendorId,
-      items: items.map(item => ({
-        menuItemId: item.menuItemId,
+      items: cartItems.map(item => ({
+        menuItemId: item.id,
+        menuItemName: item.name,  // Backend expects menuItemName
         quantity: item.quantity,
+        unitPrice: item.price,  // Backend expects unitPrice, not price
+        // Optional fields (addonIds, customizations, notes) not needed for now
       })),
-      specialInstructions: instructions,
-      couponCode: appliedCoupon?.code || null,
+      vendorId: vendorId, // From cart context
+      cafeteriaId: locationContext.cafeteriaId, // From cart location context
+      officeId: locationContext.officeId, // From cart location context
+      totalAmount: cartTotals.total,
+      orderType: 'DINE_IN', // Default order type
+      // Optional: scheduledTime, specialInstructions
     };
 
     createOrderMutation.mutate(orderData);
   };
 
-  if (items.length === 0) {
+  // Empty cart state
+  if (isEmpty) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-background-light p-4">
-        <Icon name="shopping_cart" size={64} className="text-gray-300 mb-4" />
-        <h3 className="text-lg font-bold text-gray-900 mb-2">Your cart is empty</h3>
-        <p className="text-sm text-gray-500 text-center mb-6">
-          Add some delicious items to your cart to get started
-        </p>
-        <Button variant="primary" onClick={() => navigate('/employee/menu')}>
-          Browse Menu
-        </Button>
+      <div className="min-h-full flex items-center justify-center p-4">
+        <div className="text-center space-y-4 max-w-sm">
+          <div className="w-24 h-24 mx-auto rounded-2xl bg-surface-container flex items-center justify-center">
+            <ShoppingCart size={48} className="text-on-surface-variant opacity-40" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="font-headline text-headline-lg text-on-surface">
+              Your Cart is Empty
+            </h2>
+            <p className="text-body-md text-on-surface-variant">
+              Add items from your favorite vendors to get started
+            </p>
+          </div>
+          <Button
+            variant="primary"
+            size="lg"
+            onClick={() => navigate('/employee/menu')}
+          >
+            Browse Menu
+          </Button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background-light dark:bg-background-dark pb-32">
+    <div className="min-h-full pb-32">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-4">
+      <div className="p-4 bg-surface-container-low border-b border-outline-variant/15">
         <div className="flex items-center justify-between">
-          <button
-            onClick={() => navigate(-1)}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          <div>
+            <h1 className="font-headline text-display-sm text-on-surface">Your Cart</h1>
+            <p className="text-body-sm text-on-surface-variant mt-1">
+              {cartTotals.itemCount} item{cartTotals.itemCount !== 1 ? 's' : ''}
+            </p>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowClearConfirm(true)}
+            className="text-error hover:bg-error/10"
           >
-            <Icon name="arrow_back" />
-          </button>
-          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Cart</h1>
-          <div className="w-10" />
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <div className="px-4 py-4 space-y-4">
-        {/* Items Section */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Your Order</h3>
-            <span className="text-primary text-sm font-medium">{itemCount} items</span>
-          </div>
-
-          <AnimatePresence>
-            {items.map((item) => (
-              <motion.div
-                key={item.menuItemId}
-                layout
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, x: -100 }}
-                className="flex items-center gap-4 py-3 border-b border-gray-100 dark:border-gray-700 last:border-b-0"
-              >
-                <div
-                  className="w-16 h-16 rounded-lg bg-cover bg-center flex-shrink-0"
-                  style={{ backgroundImage: `url(${item.imageUrl})` }}
-                />
-
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">{item.name}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">${(item.price * item.quantity).toFixed(2)}</p>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => updateQuantity(item.menuItemId, item.quantity - 1)}
-                    className="w-7 h-7 flex items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                  >
-                    <Icon name="remove" size={16} />
-                  </button>
-                  <span className="text-base font-bold w-6 text-center">{item.quantity}</span>
-                  <button
-                    onClick={() => updateQuantity(item.menuItemId, item.quantity + 1)}
-                    className="w-7 h-7 flex items-center justify-center rounded-lg bg-primary hover:bg-primary-light text-white transition-colors"
-                  >
-                    <Icon name="add" size={16} />
-                  </button>
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
-
-        {/* Coupon Section */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-4">
-          <label className="block mb-2">
-            <p className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-2">Apply Coupon</p>
-            <div className="flex gap-2">
-              <input
-                className="flex-1 px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                placeholder="Enter promo code"
-                value={couponCode}
-                onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-              />
-              <Button variant="primary" onClick={handleApplyCoupon}>
-                Apply
-              </Button>
-            </div>
-          </label>
-        </div>
-
-        {/* Instructions */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-4">
-          <p className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-2">Delivery Instructions</p>
-          <textarea
-            className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all resize-none"
-            placeholder="e.g. Leave at Desk 4B, use side entrance..."
-            value={instructions}
-            onChange={(e) => setInstructions(e.target.value)}
-            rows={3}
-          />
-        </div>
-
-        {/* Price Breakdown */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 space-y-3">
-          <div className="flex justify-between items-center">
-            <span className="text-gray-500 dark:text-gray-400">Subtotal</span>
-            <span className="text-gray-900 dark:text-gray-100 font-medium">${subtotal.toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-gray-500 dark:text-gray-400">Tax (8%)</span>
-            <span className="text-gray-900 dark:text-gray-100 font-medium">${tax.toFixed(2)}</span>
-          </div>
-          {appliedCoupon && (
-            <div className="flex justify-between items-center p-3 bg-success/10 rounded-lg">
-              <div className="flex items-center gap-2">
-                <Icon name="local_offer" className="text-success" />
-                <span className="text-success font-semibold">Coupon ({appliedCoupon.code})</span>
-              </div>
-              <span className="text-success font-bold">-${((subtotal * appliedCoupon.discount) / 100).toFixed(2)}</span>
-            </div>
-          )}
-          {walletDeduction > 0 && (
-            <div className="flex justify-between items-center p-3 bg-primary/10 rounded-lg">
-              <div className="flex items-center gap-2">
-                <Icon name="account_balance_wallet" className="text-primary" />
-                <span className="text-primary font-semibold">Wallet Deduction</span>
-              </div>
-              <span className="text-primary font-bold">-${walletDeduction.toFixed(2)}</span>
-            </div>
-          )}
-          <div className="pt-3 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
-            <span className="text-lg font-bold text-gray-900 dark:text-gray-100">Total</span>
-            <span className="text-xl font-extrabold text-gray-900 dark:text-gray-100">${finalTotal.toFixed(2)}</span>
-          </div>
+            Clear All
+          </Button>
         </div>
       </div>
 
-      {/* Sticky Footer */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 safe-area-insets">
+      {/* Cart Items */}
+      <div className="p-4 space-y-3">
+        <AnimatePresence>
+          {cartItems.map((item) => (
+            <motion.div
+              key={item.id}
+              layout
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              className="bg-surface-container-lowest rounded-xl p-4 shadow-card"
+            >
+              <div className="flex gap-4">
+                {/* Item Image */}
+                <div className="w-20 h-20 flex-shrink-0 rounded-lg bg-surface-container overflow-hidden">
+                  {item.imageUrl ? (
+                    <img
+                      src={item.imageUrl}
+                      alt={item.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <ShoppingCart size={24} className="text-on-surface-variant opacity-20" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Item Details */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-headline text-body-lg text-on-surface line-clamp-1">
+                        {item.name}
+                      </h3>
+                      <p className="text-label-md text-primary font-semibold mt-1">
+                        {formatCurrency(item.price)}
+                      </p>
+                    </div>
+
+                    {/* Remove button */}
+                    <button
+                      onClick={() => setItemToRemove(item.id)}
+                      className="p-2 -mr-2 rounded-lg hover:bg-error/10 transition-colors"
+                    >
+                      <Trash2 size={16} className="text-error" />
+                    </button>
+                  </div>
+
+                  {/* Quantity Controls */}
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 bg-surface-container rounded-lg p-1">
+                      <button
+                        onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
+                        className="w-8 h-8 rounded-md hover:bg-surface-container-high flex items-center justify-center transition-colors"
+                      >
+                        <Minus size={16} className="text-on-surface" />
+                      </button>
+                      <span className="font-headline text-body-md text-on-surface min-w-[24px] text-center">
+                        {item.quantity}
+                      </span>
+                      <button
+                        onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
+                        className="w-8 h-8 rounded-md hover:bg-surface-container-high flex items-center justify-center transition-colors"
+                      >
+                        <Plus size={16} className="text-on-surface" />
+                      </button>
+                    </div>
+
+                    {/* Item total */}
+                    <div className="text-body-md text-on-surface-variant">
+                      {formatCurrency(item.price * item.quantity)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+
+      {/* Bill Summary - Fixed at bottom */}
+      <div className="fixed bottom-0 left-0 right-0 bg-surface-container-lowest border-t border-outline-variant/15 p-4 space-y-4 safe-bottom">
+        {/* Bill Details */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-body-md">
+            <span className="text-on-surface-variant">Subtotal</span>
+            <span className="text-on-surface">{formatCurrency(cartTotals.subtotal)}</span>
+          </div>
+          <div className="flex items-center justify-between text-body-md">
+            <span className="text-on-surface-variant">GST (5%)</span>
+            <span className="text-on-surface">{formatCurrency(cartTotals.tax)}</span>
+          </div>
+          <div className="h-px bg-outline-variant/15 my-2" />
+          <div className="flex items-center justify-between">
+            <span className="font-headline text-headline-sm text-on-surface">Total</span>
+            <span className="font-headline text-headline-lg text-primary">
+              {formatCurrency(cartTotals.total)}
+            </span>
+          </div>
+        </div>
+
+        {/* Wallet Balance Warning */}
+        {!hasSufficientBalance && (
+          <div className="flex items-start gap-3 p-3 bg-error/10 rounded-xl">
+            <AlertCircle size={20} className="text-error flex-shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="text-label-md text-error font-semibold">Insufficient Balance</p>
+              <p className="text-label-sm text-on-surface-variant mt-1">
+                Your wallet balance: {formatCurrency(wallet?.balance || 0)}. Please add funds to continue.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Checkout Button */}
         <Button
           variant="primary"
           size="lg"
           fullWidth
-          onClick={handleConfirmOrder}
-          loading={createOrderMutation.isLoading}
-          icon={<Icon name="arrow_forward" />}
-          iconPosition="right"
+          onClick={handleCheckout}
+          disabled={!hasSufficientBalance || createOrderMutation.isPending}
+          loading={createOrderMutation.isPending}
         >
-          Confirm Order - ${finalTotal.toFixed(2)}
+          {createOrderMutation.isPending
+            ? 'Placing Order...'
+            : hasSufficientBalance
+            ? 'Place Order'
+            : 'Insufficient Balance'}
         </Button>
+
+        {/* Wallet balance display */}
+        <div className="text-center text-label-sm text-on-surface-variant">
+          Wallet Balance: {formatCurrency(wallet?.balance || 0)}
+        </div>
       </div>
+
+      {/* Clear Cart Confirmation */}
+      <ConfirmModal
+        isOpen={showClearConfirm}
+        onClose={() => setShowClearConfirm(false)}
+        onConfirm={() => {
+          clearCart();
+          setShowClearConfirm(false);
+        }}
+        title="Clear Cart?"
+        message="Are you sure you want to remove all items from your cart?"
+        confirmText="Clear Cart"
+        cancelText="Cancel"
+        variant="danger"
+      />
+
+      {/* Remove Item Confirmation */}
+      <ConfirmModal
+        isOpen={!!itemToRemove}
+        onClose={() => setItemToRemove(null)}
+        onConfirm={handleRemoveItem}
+        title="Remove Item?"
+        message="Are you sure you want to remove this item from your cart?"
+        confirmText="Remove"
+        cancelText="Cancel"
+        variant="danger"
+      />
     </div>
   );
 };

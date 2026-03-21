@@ -15,6 +15,7 @@ import com.bitedash.shared.api.identity.UserService;
 import com.bitedash.shared.annotation.RequireRole;
 import com.bitedash.shared.dto.ApiResponse;
 import com.bitedash.shared.enums.Role;
+import com.bitedash.shared.util.UserContext;
 import com.bitedash.organisation.constant.OrganisationConstants.Message;
 import com.bitedash.organisation.dto.request.OrgAndAdmCreate;
 import com.bitedash.organisation.dto.request.OrganizationRequest;
@@ -95,5 +96,20 @@ public class OrganizationController {
 		return ResponseEntity.status(HttpStatus.OK)
 				.body(new ApiResponse(true, "Super Admin stats fetched successfully",
 						organizationService.getSuperAdminStats()));
+	}
+
+	@GetMapping("/admin/dashboard")
+	@RequireRole({Role.ROLE_ORG_ADMIN})
+	public ResponseEntity<ApiResponse> getOrgAdminStats() {
+		Long orgId = UserContext.get().orgId();
+
+		if (orgId == null) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body(new ApiResponse(false, "Organization ID not found for user", null));
+		}
+
+		return ResponseEntity.status(HttpStatus.OK)
+				.body(new ApiResponse(true, "Org Admin stats fetched successfully",
+						organizationService.getOrgAdminStats(orgId)));
 	}
 }

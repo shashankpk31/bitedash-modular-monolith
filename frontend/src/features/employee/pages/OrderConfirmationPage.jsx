@@ -1,140 +1,220 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { QRCodeSVG } from 'qrcode.react';
+import { CheckCircle, Clock, MapPin, Utensils, Phone } from 'lucide-react';
 import { motion } from 'framer-motion';
-import Icon from '../../../components/ui/Icon';
-import Button from '../../../components/ui/Button';
-import Spinner from '../../../components/ui/Spinner';
-import Card from '../../../components/ui/Card';
-import orderService from '../../../services/orderService';
-import { foodPlaceholder } from '../../../utils/placeholders';
+import Button from '../../../common/components/Button';
+import Badge, { StatusBadge } from '../../../common/components/Badge';
+import { PageLoader } from '../../../common/components/Spinner';
+import { useOrder, useCancelOrder } from '../../../services/queries/order.queries';
+import { formatCurrency, formatDateTime, formatRelativeTime } from '../../../common/utils';
+import { ORDER_STATUS } from '../../../config/constants';
+import { useState } from 'react';
+import { ConfirmModal } from '../../../common/components/Modal';
 
+// Order Confirmation Page - Post-checkout order details and tracking
+// Why? Shows order success and real-time status updates
 const OrderConfirmationPage = () => {
   const { orderId } = useParams();
   const navigate = useNavigate();
+  const { data: order, isLoading } = useOrder(orderId);
+  const cancelOrderMutation = useCancelOrder();
 
-  const { data: order, isLoading } = useQuery({
-    queryKey: ['order', orderId],
-    queryFn: () => orderService.getOrderById(orderId),
-    retry: 3,
-  });
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Spinner size="lg" />
-      </div>
+  // Handle order cancellation
+  const handleCancelOrder = () => {
+    cancelOrderMutation.mutate(
+      { orderId, reason: 'Customer requested cancellation' },
+      {
+        onSuccess: () => {
+          setShowCancelConfirm(false);
+        },
+      }
     );
+  };
+
+  // Check if order can be cancelled (only if pending or confirmed)
+  const canCancel = order?.status === ORDER_STATUS.PENDING || order?.status === ORDER_STATUS.CONFIRMED;
+
+  // Loading state
+  if (isLoading) {
+    return <PageLoader message="Loading order details..." />;
   }
 
+  // Error state
   if (!order) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-4">
-        <Icon name="error" size={64} className="text-error mb-4" />
-        <h2 className="text-xl font-bold mb-2">Order not found</h2>
-        <Button onClick={() => navigate('/employee/menu')}>Back to Menu</Button>
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="text-center space-y-4">
+          <h2 className="font-headline text-headline-lg text-on-surface">Order Not Found</h2>
+          <p className="text-body-md text-on-surface-variant">
+            The order you're looking for doesn't exist or has been removed.
+          </p>
+          <Button variant="primary" onClick={() => navigate('/employee/orders')}>
+            View All Orders
+          </Button>
+        </div>
       </div>
     );
   }
 
+  // Order status steps for visual progress
+  const statusSteps = [
+    { status: ORDER_STATUS.PENDING, label: 'Order Placed', icon: CheckCircle },
+    { status: ORDER_STATUS.CONFIRMED, label: 'Confirmed', icon: CheckCircle },
+    { status: ORDER_STATUS.PREPARING, label: 'Preparing', icon: Utensils },
+    { status: ORDER_STATUS.READY, label: 'Ready', icon: CheckCircle },
+    { status: ORDER_STATUS.PICKED_UP, label: 'Picked Up', icon: CheckCircle },
+  ];
+
+  const currentStepIndex = statusSteps.findIndex(step => step.status === order.status);
+
   return (
-    <div className="min-h-screen bg-background-light dark:bg-background-dark p-6 pb-24">
-      {/* Success Animation */}
-      <motion.div
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ type: 'spring', duration: 0.5 }}
-        className="flex justify-center mb-6"
-      >
-        <div className="bg-primary/10 rounded-full p-8">
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2 }}
-          >
-            <Icon name="check_circle" fill={1} size={64} className="text-primary" />
-          </motion.div>
-        </div>
-      </motion.div>
+    <div className="min-h-full pb-8">
+      {/* Success Header */}
+      <div className="bg-surface-container-low p-6 text-center space-y-4">
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ type: 'spring', duration: 0.5 }}
+          className="w-20 h-20 mx-auto rounded-2xl bg-green-500/10 flex items-center justify-center"
+        >
+          <CheckCircle size={40} className="text-green-600" />
+        </motion.div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-      >
-        <h1 className="text-3xl font-bold text-center mb-2 text-gray-900 dark:text-gray-100">
-          Order Placed!
-        </h1>
-        <p className="text-center text-primary text-xl font-semibold mb-8">
-          Order #{order.orderNumber || order.id}
-        </p>
-
-        {/* QR Code Card */}
-        <Card padding="lg" className="mb-6">
-          <p className="text-center text-gray-600 dark:text-gray-400 mb-4">
-            Show this QR code to the vendor
+        <div className="space-y-2">
+          <h1 className="font-headline text-display-sm text-on-surface">
+            Order Placed Successfully!
+          </h1>
+          <p className="text-body-md text-on-surface-variant">
+            Order #{order.id} • {formatRelativeTime(order.createdAt)}
           </p>
-          <div className="flex justify-center mb-4">
-            <div className="bg-white p-4 rounded-xl shadow-lg">
-              <QRCodeSVG
-                value={order.qrCode || `ORDER-${order.id}`}
-                size={200}
-                level="H"
-                includeMargin
-              />
+        </div>
+
+        {/* Status Badge */}
+        <StatusBadge status={order.status} size="lg" />
+      </div>
+
+      {/* Order Status Progress */}
+      {order.status !== ORDER_STATUS.CANCELLED && (
+        <div className="p-6 space-y-4">
+          <h2 className="font-headline text-headline-md text-on-surface">Order Status</h2>
+
+          <div className="relative">
+            {statusSteps.map((step, index) => {
+              const Icon = step.icon;
+              const isCompleted = index <= currentStepIndex;
+              const isCurrent = index === currentStepIndex;
+
+              return (
+                <div key={step.status} className="flex gap-4">
+                  {/* Timeline */}
+                  <div className="flex flex-col items-center">
+                    <div
+                      className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                        isCompleted
+                          ? 'bg-primary text-on-primary'
+                          : 'bg-surface-container text-on-surface-variant'
+                      }`}
+                    >
+                      <Icon size={20} />
+                    </div>
+                    {index < statusSteps.length - 1 && (
+                      <div
+                        className={`w-0.5 h-12 transition-colors ${
+                          isCompleted ? 'bg-primary' : 'bg-outline-variant'
+                        }`}
+                      />
+                    )}
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1 pb-8">
+                    <div
+                      className={`font-headline text-body-lg ${
+                        isCompleted ? 'text-on-surface' : 'text-on-surface-variant'
+                      }`}
+                    >
+                      {step.label}
+                    </div>
+                    {isCurrent && order.estimatedTime && (
+                      <div className="text-label-sm text-on-surface-variant mt-1 flex items-center gap-1">
+                        <Clock size={14} />
+                        Ready in ~{order.estimatedTime} min
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Order Details */}
+      <div className="p-6 space-y-6">
+        {/* Vendor Info */}
+        <div className="bg-surface-container-lowest rounded-xl p-4 space-y-3">
+          <h3 className="font-headline text-headline-sm text-on-surface">Vendor Details</h3>
+          <div className="flex items-start gap-3">
+            <div className="w-12 h-12 rounded-lg bg-surface-container flex items-center justify-center">
+              <Utensils size={20} className="text-on-surface-variant" />
+            </div>
+            <div className="flex-1">
+              <div className="font-headline text-body-lg text-on-surface">
+                {order.vendorName || 'Vendor'}
+              </div>
+              {order.vendorPhone && (
+                <div className="text-label-md text-on-surface-variant flex items-center gap-2 mt-1">
+                  <Phone size={14} />
+                  {order.vendorPhone}
+                </div>
+              )}
             </div>
           </div>
-          <div className="flex items-center justify-center gap-2 text-primary">
-            <Icon name="qr_code_scanner" />
-            <span className="font-semibold">Ready for Scan</span>
-          </div>
-        </Card>
-
-        {/* Estimated Time */}
-        <div className="bg-orange-50 dark:bg-orange-900/20 rounded-xl p-4 mb-6">
-          <div className="flex items-center gap-2 mb-2">
-            <Icon name="schedule" className="text-orange-600" />
-            <span className="text-orange-600 font-semibold">Estimated Prep Time</span>
-          </div>
-          <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            Ready in {order.estimatedPrepTime || 15} mins
-          </div>
         </div>
 
-        {/* Order Summary */}
-        <Card padding="lg" className="mb-6">
-          <h3 className="font-bold text-lg mb-4 text-gray-900 dark:text-gray-100">Order Summary</h3>
-          <div className="space-y-3">
+        {/* Order Items */}
+        <div className="space-y-3">
+          <h3 className="font-headline text-headline-sm text-on-surface">Order Items</h3>
+          <div className="bg-surface-container-lowest rounded-xl divide-y divide-outline-variant/15">
             {order.items?.map((item, index) => (
-              <div key={index} className="flex items-center gap-4">
-                <img
-                  src={item.imageUrl || foodPlaceholder}
-                  onError={(e) => { e.target.src = foodPlaceholder; }}
-                  alt={item.name}
-                  className="w-12 h-12 rounded-lg object-cover"
-                />
+              <div key={index} className="p-4 flex items-center justify-between">
                 <div className="flex-1">
-                  <div className="font-semibold text-gray-900 dark:text-gray-100">
-                    {item.quantity}x {item.name}
+                  <div className="font-headline text-body-md text-on-surface">
+                    {item.itemName || item.name}
                   </div>
-                  {item.addons?.length > 0 && (
-                    <div className="text-sm text-gray-500">{item.addons.join(', ')}</div>
-                  )}
+                  <div className="text-label-sm text-on-surface-variant mt-1">
+                    Qty: {item.quantity} × {formatCurrency(item.price)}
+                  </div>
                 </div>
-                <div className="font-bold text-gray-900 dark:text-gray-100">
-                  ${((item.price || 0) * item.quantity).toFixed(2)}
+                <div className="font-headline text-body-lg text-on-surface">
+                  {formatCurrency(item.quantity * item.price)}
                 </div>
               </div>
             ))}
           </div>
+        </div>
 
-          <div className="flex justify-between items-center mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-            <span className="text-lg font-bold text-gray-900 dark:text-gray-100">Total Paid</span>
-            <span className="text-2xl font-bold text-primary">
-              ${(order.totalAmount || 0).toFixed(2)}
+        {/* Bill Summary */}
+        <div className="bg-surface-container-lowest rounded-xl p-4 space-y-2">
+          <div className="flex items-center justify-between text-body-md">
+            <span className="text-on-surface-variant">Subtotal</span>
+            <span className="text-on-surface">{formatCurrency(order.subtotal || order.totalAmount)}</span>
+          </div>
+          {order.tax && (
+            <div className="flex items-center justify-between text-body-md">
+              <span className="text-on-surface-variant">Tax</span>
+              <span className="text-on-surface">{formatCurrency(order.tax)}</span>
+            </div>
+          )}
+          <div className="h-px bg-outline-variant/15 my-2" />
+          <div className="flex items-center justify-between">
+            <span className="font-headline text-headline-sm text-on-surface">Total Paid</span>
+            <span className="font-headline text-headline-lg text-primary">
+              {formatCurrency(order.totalAmount)}
             </span>
           </div>
-        </Card>
+        </div>
 
         {/* Actions */}
         <div className="space-y-3">
@@ -143,20 +223,46 @@ const OrderConfirmationPage = () => {
             size="lg"
             fullWidth
             onClick={() => navigate('/employee/menu')}
-            icon={<Icon name="home" />}
           >
-            Back to Home
+            Order Again
           </Button>
+
+          {canCancel && (
+            <Button
+              variant="outline"
+              size="lg"
+              fullWidth
+              onClick={() => setShowCancelConfirm(true)}
+              disabled={cancelOrderMutation.isPending}
+              className="border-error text-error hover:bg-error/10"
+            >
+              Cancel Order
+            </Button>
+          )}
+
           <Button
-            variant="outline"
+            variant="ghost"
             size="lg"
             fullWidth
             onClick={() => navigate('/employee/orders')}
           >
-            View Order History
+            View All Orders
           </Button>
         </div>
-      </motion.div>
+      </div>
+
+      {/* Cancel Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showCancelConfirm}
+        onClose={() => setShowCancelConfirm(false)}
+        onConfirm={handleCancelOrder}
+        loading={cancelOrderMutation.isPending}
+        title="Cancel Order?"
+        message="Are you sure you want to cancel this order? You will receive a refund to your wallet."
+        confirmText="Cancel Order"
+        cancelText="Keep Order"
+        variant="danger"
+      />
     </div>
   );
 };

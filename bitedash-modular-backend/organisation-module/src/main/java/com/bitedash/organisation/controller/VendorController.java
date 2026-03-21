@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.bitedash.shared.annotation.RequireRole;
 import com.bitedash.shared.dto.ApiResponse;
 import com.bitedash.shared.enums.Role;
+import com.bitedash.shared.util.UserContext;
 import com.bitedash.organisation.constant.OrganisationConstants.Message;
 import com.bitedash.organisation.dto.request.VendorRequest;
 import com.bitedash.organisation.service.VendorService;
@@ -37,5 +38,30 @@ public class VendorController {
 	public ResponseEntity<ApiResponse> getVendorsByCafeteria(@PathVariable Long cafeteriaId) {
 		return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse(true, Message.VEN_FETCHED.getMessage(),
 				vendorService.getVendorsByCafeteria(cafeteriaId)));
+	}
+
+	@GetMapping("/my-vendor")
+	@RequireRole({Role.ROLE_VENDOR})
+	public ResponseEntity<ApiResponse> getMyVendor() {
+		Long userId = UserContext.get().userId();
+		return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse(true, Message.VEN_FETCHED.getMessage(),
+				vendorService.getVendorByOwnerUserId(userId)));
+	}
+
+	@GetMapping("/{vendorId}/stats")
+	@RequireRole({Role.ROLE_VENDOR, Role.ROLE_SUPER_ADMIN, Role.ROLE_ORG_ADMIN})
+	public ResponseEntity<ApiResponse> getVendorStats(@PathVariable Long vendorId) {
+		return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse(true, "Vendor stats fetched successfully",
+				vendorService.getVendorStats(vendorId)));
+	}
+
+	@GetMapping("/my-stats")
+	@RequireRole({Role.ROLE_VENDOR})
+	public ResponseEntity<ApiResponse> getMyVendorStats() {
+		Long userId = UserContext.get().userId();
+		// First get vendor by user ID, then get stats
+		var vendor = vendorService.getVendorByOwnerUserId(userId);
+		return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse(true, "Vendor stats fetched successfully",
+				vendorService.getVendorStats(vendor.getId())));
 	}
 }

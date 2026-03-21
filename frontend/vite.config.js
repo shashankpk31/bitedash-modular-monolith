@@ -16,8 +16,8 @@ export default defineConfig({
         name: 'BiteDash Corporate Dining',
         short_name: 'BiteDash',
         description: 'Premium corporate dining experience powered by BiteDash. Order food from your workplace cafeteria with ease.',
-        theme_color: '#FA8112',
-        background_color: '#FAF3E1',
+        theme_color: '#a73300', // Stitch primary color
+        background_color: '#f8f6f5', // Stitch surface color
         display: 'standalone',
         orientation: 'portrait',
         scope: '/',
@@ -74,9 +74,9 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
 
         runtimeCaching: [
-          // API endpoints - Network first with fallback (no /api prefix for modular monolith)
+          // API endpoints - Network first with fallback (modular monolith on port 8089)
           {
-            urlPattern: /^http:\/\/localhost:8080\/(auth|menus|orders|wallet|organization|inventory)\/.*$/,
+            urlPattern: /^http:\/\/localhost:8089\/(auth|user|menus|orders|wallet|organisation|organization|revenue|inventory|notifications)\/.*$/,
             handler: 'NetworkFirst',
             options: {
               cacheName: 'api-cache',
@@ -98,7 +98,7 @@ export default defineConfig({
           },
           // Menu data - Cache first for offline browsing
           {
-            urlPattern: /^http:\/\/localhost:8080\/menus\/.*$/,
+            urlPattern: /^http:\/\/localhost:8089\/menus\/.*$/,
             handler: 'CacheFirst',
             options: {
               cacheName: 'menu-cache',

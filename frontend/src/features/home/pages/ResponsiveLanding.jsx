@@ -1,30 +1,22 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import LandingPage from './LandingPage';
 import CarouselLanding from './CarouselLanding';
-import LandingPageNew from './LandingPageNew';
 
-/**
- * Responsive Landing Page Wrapper
- * Shows Carousel for mobile screens (< 768px)
- * Shows Full Landing Page for tablet/desktop (>= 768px)
- */
+// Responsive Landing - Shows different landing pages based on screen size
+// Why? Mobile users get swipeable carousel, desktop users get full landing page
 const ResponsiveLanding = () => {
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   useEffect(() => {
-    const checkScreenSize = () => {
+    const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
     };
 
-    // Initial check
-    checkScreenSize();
-
-    // Listen for resize
-    window.addEventListener('resize', checkScreenSize);
-
-    return () => window.removeEventListener('resize', checkScreenSize);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  return isMobile ? <CarouselLanding /> : <LandingPageNew />;
+  return isMobile ? <CarouselLanding /> : <LandingPage />;
 };
 
 export default ResponsiveLanding;

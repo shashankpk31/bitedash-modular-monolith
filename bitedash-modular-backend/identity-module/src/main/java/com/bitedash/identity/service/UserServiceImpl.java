@@ -28,221 +28,214 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
-    private static final Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
+	private static final Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
 
-    private final UserRepository userRepository;
-    private final UserMapper userMapper;
-    private final PasswordEncoder passwordEncoder;
-    private final ApplicationEventPublisher eventPublisher;
-    private final OrganisationService organisationService;
-    private final WalletPublicService walletPublicService;
+	private final UserRepository userRepository;
+	private final UserMapper userMapper;
+	private final PasswordEncoder passwordEncoder;
+	private final ApplicationEventPublisher eventPublisher;
+	private final OrganisationService organisationService;
+	private final WalletPublicService walletPublicService;
 
-    // ===== Shared Interface Implementation =====
+	// ===== Shared Interface Implementation =====
 
-    @Override
-    public Integer countPendingVendors() {
-        return (int) userRepository.countByRoleAndStatus(Role.ROLE_VENDOR, UserStatus.PENDING_APPROVAL);
-    }
+	@Override
+	public Integer countAllUsers() {
+		return (int) userRepository.count();
+	}
 
-    @Override
-    public boolean existsByEmail(String email) {
-        return userRepository.existsByEmail(email);
-    }
+	@Override
+	public Integer countPendingVendors() {
+		return (int) userRepository.countByRoleAndStatus(Role.ROLE_VENDOR, UserStatus.PENDING_APPROVAL);
+	}
 
-    @Override
-    public boolean existsByUsername(String username) {
-        return userRepository.existsByUsername(username);
-    }
+	@Override
+	public Integer countEmployeesByOrganization(Long organizationId) {
+		return (int) userRepository.countByOrganizationIdAndRole(organizationId, Role.ROLE_EMPLOYEE);
+	}
 
-    @Override
-    public boolean userBelongsToOrganization(Long userId, Long organizationId) {
-        return userRepository.findById(userId)
-                .map(user -> organizationId.equals(user.getOrganizationId()))
-                .orElse(false);
-    }
+	@Override
+	public boolean existsByEmail(String email) {
+		return userRepository.existsByEmail(email);
+	}
 
-    @Override
-    public Role getUserRole(Long userId) {
-        return userRepository.findById(userId)
-                .map(User::getRole)
-                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
-    }
+	@Override
+	public boolean existsByUsername(String username) {
+		return userRepository.existsByUsername(username);
+	}
 
-    @Override
-    public UserStatus getUserStatus(Long userId) {
-        return userRepository.findById(userId)
-                .map(User::getStatus)
-                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
-    }
+	@Override
+	public boolean userBelongsToOrganization(Long userId, Long organizationId) {
+		return userRepository.findById(userId).map(user -> organizationId.equals(user.getOrganizationId()))
+				.orElse(false);
+	}
 
-    @Override
-    public String getUserEmail(Long userId) {
-        return userRepository.findById(userId)
-                .map(User::getEmail)
-                .orElse(null);
-    }
+	@Override
+	public Role getUserRole(Long userId) {
+		return userRepository.findById(userId).map(User::getRole)
+				.orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
+	}
 
-    @Override
-    public String getUserFullName(Long userId) {
-        return userRepository.findById(userId)
-                .map(User::getFullName)
-                .orElse(null);
-    }
+	@Override
+	public UserStatus getUserStatus(Long userId) {
+		return userRepository.findById(userId).map(User::getStatus)
+				.orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
+	}
 
-    @Override
-    public Long registerOrgAdmin(String fullName, String email, String password, String phoneNumber,
-                                  Long organizationId, String employeeId, Long officeId,
-                                  String shopName, String gstNumber) {
-        logger.info("Registering organization admin via shared API: {}", fullName);
+	@Override
+	public String getUserEmail(Long userId) {
+		return userRepository.findById(userId).map(User::getEmail).orElse(null);
+	}
 
-        RegisterOrgRequest request = new RegisterOrgRequest(
-            fullName, email, password, Role.ROLE_ORG_ADMIN, phoneNumber,
-            organizationId, employeeId, officeId, shopName, gstNumber
-        );
+	@Override
+	public String getUserFullName(Long userId) {
+		return userRepository.findById(userId).map(User::getFullName).orElse(null);
+	}
 
-        // Reuse existing logic
-        UserResponse response = registerOrgAdminDetailed(request);
-        return response.getId();
-    }
+	@Override
+	public Long registerOrgAdmin(String fullName, String email, String password, String phoneNumber,
+			Long organizationId, String employeeId, Long officeId, String shopName, String gstNumber) {
+		logger.info("Registering organization admin via shared API: {}", fullName);
 
-    // ===== Helper methods for internal use (returning full DTOs) =====
+		RegisterOrgRequest request = new RegisterOrgRequest(fullName, email, password, Role.ROLE_ORG_ADMIN, phoneNumber,
+				organizationId, employeeId, officeId, shopName, gstNumber);
 
-    public UserResponse getUserById(Long id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found with ID: " + id));
-        return userMapper.toResponse(user);
-    }
+		// Reuse existing logic
+		UserResponse response = registerOrgAdminDetailed(request);
+		return response.getId();
+	}
 
-    public UserResponse getUserByEmail(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
-        return userMapper.toResponse(user);
-    }
+	// ===== Helper methods for internal use (returning full DTOs) =====
 
-    public UserResponse getUserByUsername(String username) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found with username: " + username));
-        return userMapper.toResponse(user);
-    }
+	public UserResponse getUserById(Long id) {
+		User user = userRepository.findById(id)
+				.orElseThrow(() -> new RuntimeException("User not found with ID: " + id));
+		return userMapper.toResponse(user);
+	}
 
-    public UserResponse getUserByPhoneNumber(String phoneNumber) {
-        User user = userRepository.findByPhoneNumber(phoneNumber)
-                .orElseThrow(() -> new RuntimeException("User not found with phone: " + phoneNumber));
-        return userMapper.toResponse(user);
-    }
+	public UserResponse getUserByEmail(String email) {
+		User user = userRepository.findByEmail(email)
+				.orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+		return userMapper.toResponse(user);
+	}
 
-    public List<UserResponse> getUsersByRole(Role role) {
-        return userRepository.findByRoleAndStatus(role, UserStatus.ACTIVE)
-                .stream()
-                .map(userMapper::toResponse)
-                .collect(Collectors.toList());
-    }
+	public UserResponse getUserByUsername(String username) {
+		User user = userRepository.findByUsername(username)
+				.orElseThrow(() -> new RuntimeException("User not found with username: " + username));
+		return userMapper.toResponse(user);
+	}
 
-    public List<UserResponse> getUsersByOrganizationId(Long organizationId) {
-        return userRepository.findByOrganizationId(organizationId)
-                .stream()
-                .map(userMapper::toResponse)
-                .collect(Collectors.toList());
-    }
+	public UserResponse getUserByPhoneNumber(String phoneNumber) {
+		User user = userRepository.findByPhoneNumber(phoneNumber)
+				.orElseThrow(() -> new RuntimeException("User not found with phone: " + phoneNumber));
+		return userMapper.toResponse(user);
+	}
 
-    public UserResponse registerOrgAdminDetailed(RegisterOrgRequest request) {
-        logger.info("Registering organization admin: {}", request.fullName());
+	public List<UserResponse> getUsersByRole(Role role) {
+		return userRepository.findByRoleAndStatus(role, UserStatus.ACTIVE).stream().map(userMapper::toResponse)
+				.collect(Collectors.toList());
+	}
 
-        if (request.email() != null && userRepository.findByEmail(request.email()).isPresent()) {
-            throw new RuntimeException("Email is already registered");
-        }
+	public List<UserResponse> getUsersByOrganizationId(Long organizationId) {
+		return userRepository.findByOrganizationId(organizationId).stream().map(userMapper::toResponse)
+				.collect(Collectors.toList());
+	}
 
-        // Validate organization exists
-        if (request.organizationId() != null && !organisationService.organizationExists(request.organizationId())) {
-            throw new RuntimeException("Organization not found with ID: " + request.organizationId());
-        }
+	public UserResponse registerOrgAdminDetailed(RegisterOrgRequest request) {
+		logger.info("Registering organization admin: {}", request.fullName());
 
-        User user = userMapper.toEntity(request);
-        user.setUsername(generateUsername(request.fullName()));
-        user.setPassword(passwordEncoder.encode(request.password()));
-        user.setStatus(UserStatus.ACTIVE);
+		if (request.email() != null && userRepository.findByEmail(request.email()).isPresent()) {
+			throw new RuntimeException("Email is already registered");
+		}
 
-        user = userRepository.save(user);
+		// Validate organization exists
+		if (request.organizationId() != null && !organisationService.organizationExists(request.organizationId())) {
+			throw new RuntimeException("Organization not found with ID: " + request.organizationId());
+		}
 
-        // Initialize wallet for the new org admin
-        try {
-            walletPublicService.initWallet(user.getId());
-            logger.info("Wallet initialized for org admin: {}", user.getId());
-        } catch (Exception e) {
-            logger.warn("Failed to initialize wallet for org admin {}: {}", user.getId(), e.getMessage());
-            // Don't fail registration if wallet initialization fails
-        }
+		User user = userMapper.toEntity(request);
+		user.setUsername(generateUsername(request.fullName()));
+		user.setPassword(passwordEncoder.encode(request.password()));
+		user.setStatus(UserStatus.ACTIVE);
 
-        // Publish event for notification
-        UserRegisteredEvent event = new UserRegisteredEvent(
-            user.getId(),
-            user.getEmail(),
-            user.getFullName(),
-            user.getRole().name()
-        );
-        eventPublisher.publishEvent(event);
+		user = userRepository.save(user);
 
-        return userMapper.toResponse(user);
-    }
+		// Initialize wallet for the new org admin
+		try {
+			walletPublicService.initWallet(user.getId());
+			logger.info("Wallet initialized for org admin: {}", user.getId());
+		} catch (Exception e) {
+			logger.warn("Failed to initialize wallet for org admin {}: {}", user.getId(), e.getMessage());
+			// Don't fail registration if wallet initialization fails
+		}
 
-    public UserResponse registerVendor(RegisterRequest request) {
-        logger.info("Registering vendor: {}", request.fullName());
+		// Publish event for notification
+		UserRegisteredEvent event = new UserRegisteredEvent(user.getId(), user.getEmail(), user.getFullName(),
+				user.getRole().name());
+		eventPublisher.publishEvent(event);
 
-        if (request.email() != null && userRepository.findByEmail(request.email()).isPresent()) {
-            throw new RuntimeException("Email is already registered");
-        }
+		return userMapper.toResponse(user);
+	}
 
-        // Validate organization exists
-        if (request.organizationId() != null && !organisationService.organizationExists(request.organizationId())) {
-            throw new RuntimeException("Organization not found with ID: " + request.organizationId());
-        }
+	public UserResponse registerVendor(RegisterRequest request) {
+		logger.info("Registering vendor: {}", request.fullName());
 
-        User user = userMapper.toEntity(request);
-        user.setUsername(generateUsername(request.fullName()));
-        user.setPassword(passwordEncoder.encode(request.password()));
-        user.setStatus(UserStatus.PENDING_APPROVAL);
+		if (request.email() != null && userRepository.findByEmail(request.email()).isPresent()) {
+			throw new RuntimeException("Email is already registered");
+		}
 
-        user = userRepository.save(user);
+		// Validate organization exists
+		if (request.organizationId() != null && !organisationService.organizationExists(request.organizationId())) {
+			throw new RuntimeException("Organization not found with ID: " + request.organizationId());
+		}
 
-        // Initialize wallet for the new vendor
-        try {
-            walletPublicService.initWallet(user.getId());
-            logger.info("Wallet initialized for vendor: {}", user.getId());
-        } catch (Exception e) {
-            logger.warn("Failed to initialize wallet for vendor {}: {}", user.getId(), e.getMessage());
-            // Don't fail registration if wallet initialization fails
-        }
+		User user = userMapper.toEntity(request);
+		user.setUsername(generateUsername(request.fullName()));
+		user.setPassword(passwordEncoder.encode(request.password()));
+		user.setStatus(UserStatus.PENDING_APPROVAL);
 
-        // Publish event for notification
-        UserRegisteredEvent event = new UserRegisteredEvent(
-            user.getId(),
-            user.getEmail(),
-            user.getFullName(),
-            user.getRole().name()
-        );
-        eventPublisher.publishEvent(event);
+		user = userRepository.save(user);
 
-        return userMapper.toResponse(user);
-    }
+		// Initialize wallet for the new vendor
+		try {
+			walletPublicService.initWallet(user.getId());
+			logger.info("Wallet initialized for vendor: {}", user.getId());
+		} catch (Exception e) {
+			logger.warn("Failed to initialize wallet for vendor {}: {}", user.getId(), e.getMessage());
+			// Don't fail registration if wallet initialization fails
+		}
 
-    private String generateUsername(String fullName) {
-        String baseUsername = fullName.toLowerCase()
-            .replaceAll("[^a-z0-9]", "");
+		// Publish event for notification
+		UserRegisteredEvent event = new UserRegisteredEvent(user.getId(), user.getEmail(), user.getFullName(),
+				user.getRole().name());
+		eventPublisher.publishEvent(event);
 
-        if (baseUsername.length() > 15) {
-            baseUsername = baseUsername.substring(0, 15);
-        }
+		return userMapper.toResponse(user);
+	}
 
-        for (int i = 0; i < 10; i++) {
-            String randomSuffix = String.format("%04d", (int)(Math.random() * 10000));
-            String candidateUsername = baseUsername + randomSuffix;
+	private String generateUsername(String fullName) {
+		String baseUsername = fullName.toLowerCase().replaceAll("[^a-z0-9]", "");
 
-            if (!userRepository.findByUsername(candidateUsername).isPresent()) {
-                return candidateUsername;
-            }
-        }
+		if (baseUsername.length() > 15) {
+			baseUsername = baseUsername.substring(0, 15);
+		}
 
-        String timestampSuffix = String.valueOf(System.currentTimeMillis() % 10000);
-        return baseUsername + timestampSuffix;
-    }
+		for (int i = 0; i < 10; i++) {
+			String randomSuffix = String.format("%04d", (int) (Math.random() * 10000));
+			String candidateUsername = baseUsername + randomSuffix;
+
+			if (!userRepository.findByUsername(candidateUsername).isPresent()) {
+				return candidateUsername;
+			}
+		}
+
+		String timestampSuffix = String.valueOf(System.currentTimeMillis() % 10000);
+		return baseUsername + timestampSuffix;
+	}
+
+	@Override
+	public Long getUserOrgId(Long userId) {
+		return userRepository.findById(userId).map(user -> user.getOrganizationId())
+				.orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
+	}
 }

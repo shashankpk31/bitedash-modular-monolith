@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.bitedash.shared.annotation.RequireRole;
@@ -35,6 +36,32 @@ public class LocationController {
     public ResponseEntity<ApiResponse> createLocation(@RequestBody LocationRequest location) {
         return ResponseEntity.status(HttpStatus.CREATED).body(
 				new ApiResponse(true, Message.LOC_CREATED.getMessage(), locationService.saveLocation(location)));
+    }
+
+    @GetMapping("/locations")
+    public ResponseEntity<ApiResponse> getLocationsByQuery(
+            @RequestParam(required = false) Long organizationId) {
+        if (organizationId == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                new ApiResponse(false, "organizationId parameter is required", null));
+        }
+
+        // Validate organization access (unless SUPER_ADMIN)
+        var userContext = UserContext.get();
+        if (!"ROLE_SUPER_ADMIN".equals(userContext.role())) {
+            Long userOrgId = userContext.orgId();
+            if (userOrgId == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                    new ApiResponse(false, "Organization ID is required", null));
+            }
+            if (!organizationId.equals(userOrgId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
+                    new ApiResponse(false, "Access denied: You can only view locations from your own organization", null));
+            }
+        }
+
+        return ResponseEntity.status(HttpStatus.OK).body(
+				new ApiResponse(true, Message.LOC_FETCHED.getMessage(), locationService.findByOrgId(organizationId)));
     }
 
     @GetMapping("/locations/org/{orgId}")
@@ -80,6 +107,16 @@ public class LocationController {
     public ResponseEntity<ApiResponse> createOffice(@RequestBody OfficeRequest office) {
         return ResponseEntity.status(HttpStatus.CREATED).body(
 				new ApiResponse(true, Message.OFF_CREATED.getMessage(), locationService.createOffice(office)));
+    }
+
+    @GetMapping("/offices")
+    public ResponseEntity<ApiResponse> getOfficesByQuery(@RequestParam(required = false) Long locationId) {
+        if (locationId == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                new ApiResponse(false, "locationId parameter is required", null));
+        }
+        return ResponseEntity.status(HttpStatus.OK).body(
+				new ApiResponse(true, Message.OFF_FETCHED.getMessage(), locationService.getOfficesByLocation(locationId)));
     }
 
     @GetMapping("/offices/location/{locationId}")

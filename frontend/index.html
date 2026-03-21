@@ -3,33 +3,37 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    
+
+    <!-- Viewport optimized for mobile PWA -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <meta name="theme-color" content="#FA8112" />
-    <meta name="description" content="BiteDash - Smart Corporate Dining Platform" />
-    
+    <meta name="theme-color" content="#FF6B6B" />
+    <meta name="description" content="BiteDash - Premium Corporate Dining Platform. Order delicious food from your workplace cafeteria with ease." />
+
+    <!-- Apple PWA Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="BiteDash" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
-    
+
+    <!-- Preconnect to backend for faster API calls -->
     <link rel="preconnect" href="http://localhost:8089" />
-    
+
+    <!-- Fonts: Poppins (Headings) + Inter (Body) - Modern Food-Friendly -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
     <title>BiteDash | Fueling your Workday</title>
 
     <style>
-      /* Splash Screen / Initial Loader Style */
+      /* Initial Splash Screen - Modern Minimal Design */
       body {
         margin: 0;
         padding: 0;
-        background-color: #FAF3E1; /* Matches your surface-bg */
+        background-color: #FAFAFA; /* Clean light gray */
         font-family: 'Inter', sans-serif;
       }
-      
+
       #initial-loader {
         display: flex;
         flex-direction: column;
@@ -41,13 +45,15 @@
         top: 0;
         left: 0;
         z-index: 9999;
+        background-color: #FAFAFA;
       }
 
+      /* Spinner with coral red */
       .spinner {
         width: 40px;
         height: 40px;
-        border: 4px solid #F5E7C6;
-        border-top: 4px solid #FA8112;
+        border: 4px solid #F5F5F5; /* surface-container */
+        border-top: 4px solid #FF6B6B; /* primary coral */
         border-radius: 50%;
         animation: spin 1s linear infinite;
       }
@@ -57,33 +63,48 @@
         100% { transform: rotate(360deg); }
       }
 
+      .loader-text {
+        color: #1A1A1A; /* on-surface */
+        font-family: 'Poppins', sans-serif;
+        font-weight: 700;
+        font-size: 1.5rem;
+        margin-top: 1.5rem;
+        letter-spacing: -0.01em;
+      }
+
       /* Hide loader when React app renders */
       body.loaded #initial-loader {
-        display: none;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease-out;
       }
     </style>
   </head>
   <body>
     <noscript>
-      <div style="text-align: center; padding: 50px;">
-        <h2>JavaScript Required</h2>
-        <p>BiteDash requires JavaScript to manage your corporate dining experience.</p>
+      <div style="text-align: center; padding: 50px; font-family: 'Inter', sans-serif;">
+        <h2 style="color: #FF6B6B; font-family: 'Poppins', sans-serif;">JavaScript Required</h2>
+        <p style="color: #5F5F5F;">BiteDash requires JavaScript to deliver your corporate dining experience.</p>
       </div>
     </noscript>
 
+    <!-- Initial loading screen -->
     <div id="initial-loader">
       <div class="spinner"></div>
-      <p style="color: #64748b; font-weight: 600; margin-top: 1rem;">BiteDash</p>
+      <p class="loader-text">BiteDash</p>
     </div>
 
+    <!-- React root -->
     <div id="root"></div>
 
     <script type="module" src="/src/main.jsx"></script>
-    
+
     <script>
-      // Simple logic to remove loader once app is ready
+      // Remove loader once app is ready - smooth transition
       window.addEventListener('load', () => {
-        document.body.classList.add('loaded');
+        setTimeout(() => {
+          document.body.classList.add('loaded');
+        }, 100);
       });
     </script>
   </body>

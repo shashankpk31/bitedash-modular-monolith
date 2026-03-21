@@ -11,9 +11,19 @@ import com.bitedash.shared.enums.UserStatus;
 public interface UserService {
 
     /**
+     * Count all users in the system (for super admin dashboard)
+     */
+    Integer countAllUsers();
+
+    /**
      * Count pending vendors (for admin dashboard)
      */
     Integer countPendingVendors();
+
+    /**
+     * Count employees by organization ID (for org admin dashboard)
+     */
+    Integer countEmployeesByOrganization(Long organizationId);
 
     /**
      * Check if user exists by email
@@ -57,4 +67,7 @@ public interface UserService {
     Long registerOrgAdmin(String fullName, String email, String password, String phoneNumber,
                           Long organizationId, String employeeId, Long officeId,
                           String shopName, String gstNumber);
+
+	Long getUserOrgId(Long userId);
+
 }

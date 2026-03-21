@@ -1,252 +1,404 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '../../../context/AuthContext';
-import Icon from '../../../components/ui/Icon';
-import Button from '../../../components/ui/Button';
-import SearchBar from '../../../components/ui/SearchBar';
-import Badge from '../../../components/ui/Badge';
-import Spinner from '../../../components/ui/Spinner';
-import Card from '../../../components/ui/Card';
+import { Plus, Edit, Trash2, Search, Utensils, Tag } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import toast from 'react-hot-toast';
-import vendorService from '../services/vendorService';
-import MenuItemModal from '../components/MenuItemModal';
-import { foodPlaceholder } from '../../../utils/placeholders';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import Button from '../../../common/components/Button';
+import Input from '../../../common/components/Input';
+import Select from '../../../common/components/Select';
+import Badge from '../../../common/components/Badge';
+import Modal, { ConfirmModal } from '../../../common/components/Modal';
+import { ContentLoader } from '../../../common/components/Spinner';
+import { useVendorMenu } from '../../../services/queries/menu.queries';
+import { createMenuItem, updateMenuItem, deleteMenuItem } from '../../../services/api/menu.api';
+import { useAuth } from '../../../contexts';
+import { formatCurrency } from '../../../common/utils';
+import { QUERY_KEYS } from '../../../config/constants';
+import { useVendorId } from '../hooks/useVendorId';
 
+// Menu Management Page - CRUD operations for menu items
+// Why? Vendors need to manage their menu offerings
 const MenuManagementPage = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All Items');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState(null);
 
-  const { data: menuItems = [], isLoading } = useQuery({
-    queryKey: ['menu-items', user?.id],
-    queryFn: () => vendorService.getMyMenuItems(user.id),
-    enabled: !!user?.id,
-  });
+  // Get vendor ID from backend
+  const { vendorId, isLoading: vendorIdLoading } = useVendorId();
 
-  const toggleAvailabilityMutation = useMutation({
-    mutationFn: ({ id, available }) => vendorService.updateMenuItem(id, { available }),
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
+
+  // Fetch menu items
+  const { data: menuItems, isLoading: menuLoading } = useVendorMenu(vendorId);
+
+  const isLoading = vendorIdLoading || menuLoading;
+
+  // Mutations for CRUD operations
+  const createMutation = useMutation({
+    mutationFn: createMenuItem,
     onSuccess: () => {
-      queryClient.invalidateQueries(['menu-items']);
-      toast.success('Availability updated');
+      queryClient.invalidateQueries(QUERY_KEYS.MENU_BY_VENDOR(vendorId));
+      setShowAddModal(false);
+    },
+    onError: (error) => {
+      console.error('Failed to create menu item:', error);
+      alert('Failed to create menu item. Please try again.');
     },
   });
 
-  const deleteItemMutation = useMutation({
-    mutationFn: (id) => vendorService.deleteMenuItem(id),
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }) => updateMenuItem(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries(['menu-items']);
-      toast.success('Item deleted');
+      queryClient.invalidateQueries(QUERY_KEYS.MENU_BY_VENDOR(vendorId));
+      setShowEditModal(false);
+      setSelectedItem(null);
+    },
+    onError: (error) => {
+      console.error('Failed to update menu item:', error);
+      alert('Failed to update menu item. Please try again.');
     },
   });
 
-  const categories = ['All Items', 'Appetizers', 'Main Course', 'Beverages', 'Desserts'];
-
-  const filteredItems = menuItems.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'All Items' || item.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+  const deleteMutation = useMutation({
+    mutationFn: deleteMenuItem,
+    onSuccess: () => {
+      queryClient.invalidateQueries(QUERY_KEYS.MENU_BY_VENDOR(vendorId));
+      setShowDeleteConfirm(false);
+      setSelectedItem(null);
+    },
+    onError: (error) => {
+      console.error('Failed to delete menu item:', error);
+      alert('Failed to delete menu item. Please try again.');
+    },
   });
 
+  // Filter items by search
+  const filteredItems = menuItems?.filter(item =>
+    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  ) || [];
+
+  // Handle edit
   const handleEdit = (item) => {
-    setEditingItem(item);
-    setIsModalOpen(true);
+    setSelectedItem(item);
+    setShowEditModal(true);
   };
 
-  const handleDelete = (id) => {
-    if (window.confirm('Are you sure you want to delete this item?')) {
-      deleteItemMutation.mutate(id);
+  // Handle delete
+  const handleDelete = (item) => {
+    setSelectedItem(item);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = () => {
+    if (selectedItem) {
+      deleteMutation.mutate(selectedItem.id);
     }
   };
 
+  // Menu Item Form Component
+  const MenuItemForm = ({ item, onClose }) => {
+    const [formData, setFormData] = useState(item || {
+      name: '',
+      description: '',
+      price: '',
+      category: '',
+      isVegetarian: false,
+      isAvailable: true,
+    });
+
+    const handleSubmit = (e) => {
+      e.preventDefault();
+
+      const menuItemData = {
+        name: formData.name,
+        description: formData.description,
+        price: parseFloat(formData.price),
+        category: formData.category,
+        isVeg: formData.isVegetarian,
+        isAvailable: formData.isAvailable,
+      };
+
+      if (item) {
+        // Update existing item
+        updateMutation.mutate({ id: item.id, data: menuItemData });
+      } else {
+        // Create new item
+        createMutation.mutate(menuItemData);
+      }
+    };
+
+    return (
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <Input
+          label="Item Name"
+          value={formData.name}
+          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          required
+          placeholder="e.g., Paneer Butter Masala"
+        />
+
+        <div>
+          <label className="block text-label-md text-on-surface mb-2">Description</label>
+          <textarea
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            className="w-full bg-surface-container-low text-on-surface rounded-xl p-4 border-2 border-outline-variant focus:border-primary focus:outline-none transition-colors min-h-[100px]"
+            placeholder="Describe your dish..."
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <Input
+            label="Price (₹)"
+            type="number"
+            value={formData.price}
+            onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+            required
+            placeholder="120"
+          />
+
+          <Select
+            label="Category"
+            placeholder="Select category"
+            options={[
+              { value: 'starters', label: 'Starters' },
+              { value: 'main', label: 'Main Course' },
+              { value: 'desserts', label: 'Desserts' },
+              { value: 'beverages', label: 'Beverages' },
+            ]}
+            value={formData.category}
+            onChange={(value) => setFormData({ ...formData, category: value })}
+            icon={Tag}
+          />
+        </div>
+
+        <div className="flex items-center gap-6">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={formData.isVegetarian}
+              onChange={(e) => setFormData({ ...formData, isVegetarian: e.target.checked })}
+              className="w-5 h-5 rounded border-2 border-outline-variant accent-primary"
+            />
+            <span className="text-body-md text-on-surface">Vegetarian</span>
+          </label>
+
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={formData.isAvailable}
+              onChange={(e) => setFormData({ ...formData, isAvailable: e.target.checked })}
+              className="w-5 h-5 rounded border-2 border-outline-variant accent-primary"
+            />
+            <span className="text-body-md text-on-surface">Available</span>
+          </label>
+        </div>
+
+        <div className="flex gap-3 pt-4">
+          <Button type="button" variant="ghost" fullWidth onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" variant="primary" fullWidth>
+            {item ? 'Update Item' : 'Add Item'}
+          </Button>
+        </div>
+      </form>
+    );
+  };
+
   return (
-    <div className="min-h-screen bg-background-light dark:bg-background-dark pb-6">
+    <div className="h-full flex flex-col">
       {/* Header */}
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-        <div className="flex items-center justify-between mb-2">
+      <div className="p-4 sm:p-6 lg:p-8 border-b border-outline-variant/30 bg-surface-container-low">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Menu Management</h1>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Manage your food items, pricing, and live availability.
+            <h1 className="font-headline text-display-sm lg:text-display-md text-on-surface">
+              Menu Management
+            </h1>
+            <p className="text-body-md lg:text-body-lg text-on-surface-variant mt-2">
+              Manage your menu items and availability
             </p>
           </div>
+
           <Button
             variant="primary"
-            onClick={() => {
-              setEditingItem(null);
-              setIsModalOpen(true);
-            }}
-            icon={<Icon name="add" />}
+            icon={<Plus size={20} />}
+            onClick={() => setShowAddModal(true)}
+            className="lg:px-6 lg:py-3"
           >
             Add New Item
           </Button>
         </div>
-      </header>
 
-      {/* Search */}
-      <div className="px-6 py-4">
-        <SearchBar
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          onClear={() => setSearchTerm('')}
-          placeholder="Search menu items..."
-        />
-      </div>
-
-      {/* Category Tabs */}
-      <div className="px-6 mb-6">
-        <div className="flex gap-2 overflow-x-auto no-scrollbar">
-          {categories.map(cat => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-colors ${
-                selectedCategory === cat
-                  ? 'bg-primary text-white'
-                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-              }`}
-            >
-              {cat} ({menuItems.filter(i => cat === 'All Items' || i.category === cat).length})
-            </button>
-          ))}
+        {/* Search */}
+        <div className="mt-6">
+          <Input
+            type="search"
+            placeholder="Search menu items..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            icon={<Search size={18} />}
+            iconPosition="left"
+          />
         </div>
       </div>
 
-      {/* Data Table */}
-      <div className="px-6">
-        {isLoading ? (
-          <div className="flex justify-center py-12">
-            <Spinner size="lg" />
-          </div>
-        ) : filteredItems.length === 0 ? (
-          <Card padding="lg" className="text-center">
-            <Icon name="restaurant_menu" size={48} className="text-gray-300 mx-auto mb-2" />
-            <p className="text-gray-500 dark:text-gray-400 mb-4">No items found</p>
-            <Button variant="primary" onClick={() => setIsModalOpen(true)}>
-              Add Your First Item
-            </Button>
-          </Card>
-        ) : (
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Item
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Category
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Price
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    In Stock
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                <AnimatePresence>
-                  {filteredItems.map((item) => (
-                    <motion.tr
-                      key={item.id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                    >
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <img
-                            src={item.imageUrl || foodPlaceholder}
-                            alt={item.name}
-                            className="w-12 h-12 rounded-lg object-cover"
-                            onError={(e) => { e.target.src = foodPlaceholder; }}
-                          />
-                          <div>
-                            <div className="font-semibold text-gray-900 dark:text-gray-100">{item.name}</div>
-                            <div className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1">{item.description}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <Badge variant="info" size="sm">{item.category}</Badge>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="font-semibold text-gray-900 dark:text-gray-100">${item.price.toFixed(2)}</span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <button
-                          onClick={() => toggleAvailabilityMutation.mutate({ id: item.id, available: !item.available })}
-                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                            item.available ? 'bg-success' : 'bg-gray-300 dark:bg-gray-600'
-                          }`}
-                        >
-                          <span
-                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                              item.available ? 'translate-x-6' : 'translate-x-1'
-                            }`}
-                          />
-                        </button>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex gap-2 justify-end">
-                          <button
-                            onClick={() => handleEdit(item)}
-                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors"
-                          >
-                            <Icon name="edit" size={18} className="text-gray-600 dark:text-gray-400" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(item.id)}
-                            className="p-2 hover:bg-error/10 rounded-lg transition-colors"
-                          >
-                            <Icon name="delete" size={18} className="text-error" />
-                          </button>
-                        </div>
-                      </td>
-                    </motion.tr>
-                  ))}
-                </AnimatePresence>
-              </tbody>
-            </table>
+      {/* Menu Items */}
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+        {/* Loading */}
+        {isLoading && <ContentLoader message="Loading menu..." />}
 
-            {/* Pagination */}
-            <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Showing {filteredItems.length} of {menuItems.length} items
-              </p>
-              <div className="flex gap-2">
-                <button className="px-3 py-1 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 disabled:opacity-50">
-                  Previous
-                </button>
-                <button className="px-3 py-1 rounded-lg bg-primary text-white font-semibold">1</button>
-                <button className="px-3 py-1 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">2</button>
-                <button className="px-3 py-1 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-                  Next
-                </button>
-              </div>
+        {/* Empty State */}
+        {!isLoading && filteredItems.length === 0 && (
+          <div className="text-center py-16 lg:py-24 space-y-6">
+            <div className="w-24 h-24 lg:w-32 lg:h-32 mx-auto rounded-2xl lg:rounded-3xl bg-surface-container flex items-center justify-center">
+              <Utensils size={48} className="text-on-surface-variant opacity-40 lg:w-16 lg:h-16" />
             </div>
+            <div className="space-y-3">
+              <h3 className="font-headline text-headline-md lg:text-headline-lg text-on-surface">
+                {searchQuery ? 'No Items Found' : 'No Menu Items Yet'}
+              </h3>
+              <p className="text-body-md lg:text-body-lg text-on-surface-variant max-w-md mx-auto">
+                {searchQuery
+                  ? 'Try a different search term'
+                  : 'Add your first menu item to get started'}
+              </p>
+            </div>
+            {!searchQuery && (
+              <Button
+                variant="primary"
+                icon={<Plus size={20} />}
+                onClick={() => setShowAddModal(true)}
+              >
+                Add New Item
+              </Button>
+            )}
+          </div>
+        )}
+
+        {/* Items Table/Grid */}
+        {!isLoading && filteredItems.length > 0 && (
+          <div className="space-y-3">
+            {filteredItems.map(item => (
+              <motion.div
+                key={item.id}
+                layout
+                className="bg-surface-container-lowest rounded-xl p-4 shadow-card hover:shadow-ambient transition-shadow"
+              >
+                <div className="flex items-start gap-4">
+                  {/* Image */}
+                  <div className="w-20 h-20 flex-shrink-0 rounded-lg bg-surface-container overflow-hidden">
+                    {item.imageUrl ? (
+                      <img
+                        src={item.imageUrl}
+                        alt={item.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Utensils size={24} className="text-on-surface-variant opacity-20" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Details */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-4 mb-2">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-headline text-body-lg text-on-surface line-clamp-1">
+                          {item.name}
+                        </h3>
+                        {item.description && (
+                          <p className="text-body-sm text-on-surface-variant line-clamp-2 mt-1">
+                            {item.description}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex gap-1 flex-shrink-0">
+                        {item.isVegetarian && <Badge variant="success" size="sm">Veg</Badge>}
+                        {!item.isAvailable && <Badge variant="error" size="sm">Out</Badge>}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between mt-3">
+                      <div className="font-headline text-headline-sm text-primary">
+                        {formatCurrency(item.price)}
+                      </div>
+
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          icon={<Edit size={16} />}
+                          onClick={() => handleEdit(item)}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          icon={<Trash2 size={16} />}
+                          onClick={() => handleDelete(item)}
+                          className="text-error hover:bg-error/10"
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
           </div>
         )}
       </div>
 
-      {/* Modal */}
-      {isModalOpen && (
-        <MenuItemModal
-          item={editingItem}
+      {/* Add Item Modal */}
+      <Modal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        title="Add New Menu Item"
+        size="lg"
+      >
+        <MenuItemForm onClose={() => setShowAddModal(false)} />
+      </Modal>
+
+      {/* Edit Item Modal */}
+      <Modal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setSelectedItem(null);
+        }}
+        title="Edit Menu Item"
+        size="lg"
+      >
+        <MenuItemForm
+          item={selectedItem}
           onClose={() => {
-            setIsModalOpen(false);
-            setEditingItem(null);
+            setShowEditModal(false);
+            setSelectedItem(null);
           }}
         />
-      )}
+      </Modal>
+
+      {/* Delete Confirmation */}
+      <ConfirmModal
+        isOpen={showDeleteConfirm}
+        onClose={() => {
+          setShowDeleteConfirm(false);
+          setSelectedItem(null);
+        }}
+        onConfirm={confirmDelete}
+        title="Delete Menu Item?"
+        message={`Are you sure you want to delete "${selectedItem?.name}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+      />
     </div>
   );
 };

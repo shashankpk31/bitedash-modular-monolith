@@ -1,240 +1,275 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { useAuth } from '../../../context/AuthContext';
-import { useCart } from '../../../context/CartContext';
-import Icon from '../../../components/ui/Icon';
-import SearchBar from '../../../components/ui/SearchBar';
-import Badge from '../../../components/ui/Badge';
-import Spinner from '../../../components/ui/Spinner';
-import FoodCard from '../../../components/food/FoodCard';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Store, MapPin, ChevronRight, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
-import toast from 'react-hot-toast';
-import { menuService } from '../../../services';
-import walletService from '../../../services/walletService';
+import Button from '../../../common/components/Button';
+import Modal from '../../../common/components/Modal';
+import { ContentLoader } from '../../../common/components/Spinner';
+import LocationSelector from '../components/LocationSelector';
+import { useLocation, useCart } from '../../../contexts';
+import { useVendors, usePromotedItems } from '../../../services/queries';
 
-/**
- * Employee Menu Home Page
- *
- * Based on stitch design: employee_home_menu
- * Features:
- * - Search bar
- * - Category filters with icons
- * - Today's Specials carousel
- * - Popular Items grid
- * - Real-time menu data
- * - Cart integration
- */
-const EmployeeMenuHome = () => {
-  const { user } = useAuth();
-  const { addItem, itemCount } = useCart();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
+// Menu Home Page - Main employee dashboard for ordering
+// Why? Starting point for food ordering with location and vendor selection
+const MenuHomePage = () => {
+  const navigate = useNavigate();
+  const {
+    selectedLocation,
+    selectedOffice,
+    selectedCafeteria,
+    selectedVendor,
+    isLocationComplete,
+    locationBreadcrumb,
+  } = useLocation();
 
-  // Fetch wallet balance
-  const { data: wallet } = useQuery({
-    queryKey: ['wallet'],
-    queryFn: walletService.getMyWallet,
-    staleTime: 2 * 60 * 1000, // 2 minutes
-  });
+  const { setLocation: setCartLocation } = useCart();
 
-  // Fetch promoted items (Today's Specials)
-  const { data: specials = [], isLoading: loadingSpecials } = useQuery({
-    queryKey: ['menu', 'promoted'],
-    queryFn: menuService.getPromotedItems,
-    staleTime: 10 * 60 * 1000, // 10 minutes
-  });
+  const [showLocationModal, setShowLocationModal] = useState(!isLocationComplete);
 
-  // Fetch popular items
-  const { data: popularItems = [], isLoading: loadingPopular } = useQuery({
-    queryKey: ['menu', 'popular'],
-    queryFn: menuService.getPopularItems,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
-
-  // Category configuration
-  const categories = [
-    { name: 'All', icon: 'restaurant_menu' },
-    { name: 'Fast Food', icon: 'fastfood' },
-    { name: 'Healthy', icon: 'eco' },
-    { name: 'Indian', icon: 'local_dining' },
-    { name: 'Beverages', icon: 'local_cafe' },
-    { name: 'Desserts', icon: 'cake' },
-  ];
-
-  const handleAddToCart = (item) => {
-    const success = addItem(item, 1);
-    if (success) {
-      toast.success(`${item.name} added to cart!`);
+  // Update cart location context whenever location changes
+  useEffect(() => {
+    if (selectedCafeteria && selectedOffice && selectedLocation) {
+      setCartLocation(selectedCafeteria.id, selectedOffice.id, selectedLocation.id);
     }
+  }, [selectedCafeteria, selectedOffice, selectedLocation, setCartLocation]);
+
+  // Fetch vendors for selected cafeteria
+  const { data: vendors, isLoading: vendorsLoading } = useVendors(selectedCafeteria?.id);
+
+  // Fetch promoted items (optional - for featured section)
+  const { data: promotedItems } = usePromotedItems();
+
+  // Handle location selection complete
+  const handleLocationComplete = () => {
+    setShowLocationModal(false);
   };
 
-  // Filter items based on search and category
-  const filteredItems = popularItems.filter((item) => {
-    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'All' || item.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  // Navigate to vendor detail page
+  const handleVendorClick = (vendor) => {
+    navigate(`/employee/vendor/${vendor.id}`);
+  };
 
-  const isLoading = loadingSpecials || loadingPopular;
+  // Show location selector if location not complete
+  if (!isLocationComplete) {
+    return (
+      <div className="p-4 space-y-6">
+        <div className="text-center space-y-2">
+          <h1 className="font-headline text-display-sm text-on-surface">
+            Select Your Location
+          </h1>
+          <p className="text-body-md text-on-surface-variant">
+            Choose your location to see available vendors
+          </p>
+        </div>
+
+        <LocationSelector
+          onComplete={handleLocationComplete}
+          showVendorSelection={false}
+        />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-background-light dark:bg-background-dark pb-24">
+    <div className="min-h-full">
       {/* Header Section */}
-      <header className="sticky top-0 z-50 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md px-4 pt-4 pb-2 border-b border-gray-100 dark:border-gray-700">
-        <div className="flex items-center justify-between mb-3">
-          {/* Logo */}
-          <div className="flex items-center gap-2">
-            <div className="bg-primary p-2 rounded-lg flex items-center justify-center text-white">
-              <Icon name="restaurant_menu" fill={1} />
+      <div className="bg-surface-container-low p-4 space-y-4">
+        {/* Location Display */}
+        <button
+          onClick={() => setShowLocationModal(true)}
+          className="w-full flex items-center justify-between p-4 bg-surface-container-lowest rounded-xl hover:shadow-card transition-shadow"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <MapPin size={20} className="text-primary" />
             </div>
-            <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-gray-50">
-              BiteDash
-            </h1>
+            <div className="text-left">
+              <div className="text-label-sm text-on-surface-variant">Ordering from</div>
+              <div className="font-headline text-body-md text-on-surface">
+                {locationBreadcrumb || 'Select location'}
+              </div>
+            </div>
           </div>
+          <ChevronRight size={20} className="text-on-surface-variant" />
+        </button>
 
-          {/* Wallet Balance */}
-          <div className="bg-primary/10 dark:bg-primary/20 px-3 py-1.5 rounded-full flex items-center gap-2 border border-primary/20">
-            <Icon name="account_balance_wallet" className="text-primary" size={18} />
-            <span className="text-sm font-bold text-primary">
-              ${wallet?.balance?.toFixed(2) || '0.00'}
-            </span>
-          </div>
+        {/* Welcome Message */}
+        <div className="space-y-2">
+          <h1 className="font-headline text-display-sm text-on-surface">
+            What are you craving today?
+          </h1>
+          <p className="text-body-md text-on-surface-variant">
+            Order from your favorite vendors
+          </p>
         </div>
+      </div>
 
-        {/* Location Selector */}
-        <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400 mb-4 cursor-pointer">
-          <Icon name="location_on" size={18} />
-          <span className="text-sm font-medium">
-            {user?.location || 'Main Campus - Floor 4'}
-          </span>
-          <Icon name="expand_more" size={18} />
-        </div>
-
-        {/* Search Bar */}
-        <SearchBar
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          onClear={() => setSearchTerm('')}
-          placeholder="Search for your favorite meal..."
-        />
-      </header>
-
-      {/* Categories */}
-      <section className="mt-4 px-4">
-        <div className="flex gap-3 overflow-x-auto no-scrollbar py-2">
-          {categories.map((category) => (
-            <motion.button
-              key={category.name}
-              onClick={() => setSelectedCategory(category.name)}
-              whileTap={{ scale: 0.95 }}
-              className={`
-                flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl px-5 font-semibold text-sm transition-all
-                ${
-                  selectedCategory === category.name
-                    ? 'bg-primary text-white shadow-lg shadow-primary/20'
-                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 ring-1 ring-gray-200 dark:ring-gray-700'
-                }
-              `}
-            >
-              <Icon name={category.icon} size={18} />
-              <span>{category.name}</span>
-            </motion.button>
-          ))}
-        </div>
-      </section>
-
-      {/* Featured/Specials Section */}
-      {specials.length > 0 && (
-        <section className="mt-8">
-          <div className="px-4 flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-gray-50">
-              Today's Specials
+      {/* Main Content */}
+      <div className="p-4 space-y-6">
+        {/* Promoted/Featured Items Section (Optional) */}
+        {promotedItems && promotedItems.length > 0 && (
+          <section className="space-y-3">
+            <h2 className="font-headline text-headline-md text-on-surface">
+              Featured Today
             </h2>
-            <button className="text-sm font-semibold text-primary">See all</button>
-          </div>
+            <div className="overflow-x-auto no-scrollbar -mx-4 px-4">
+              <div className="flex gap-3" style={{ width: 'max-content' }}>
+                {promotedItems.slice(0, 5).map((item) => (
+                  <motion.div
+                    key={item.id}
+                    whileHover={{ scale: 1.02 }}
+                    className="w-48 bg-surface-container-lowest rounded-xl overflow-hidden shadow-card"
+                  >
+                    <div className="aspect-square bg-surface-container">
+                      {item.imageUrl && (
+                        <img
+                          src={item.imageUrl}
+                          alt={item.name}
+                          className="w-full h-full object-cover"
+                        />
+                      )}
+                    </div>
+                    <div className="p-3">
+                      <div className="font-headline text-body-md text-on-surface line-clamp-1">
+                        {item.name}
+                      </div>
+                      <div className="text-label-sm text-primary font-semibold mt-1">
+                        ₹{item.price}
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
 
-          <div className="flex gap-4 overflow-x-auto no-scrollbar px-4">
-            {specials.map((special) => (
-              <motion.div
-                key={special.id}
-                className="relative min-w-[280px] h-40 rounded-2xl overflow-hidden shadow-xl group cursor-pointer"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <img
-                  alt={special.name}
-                  className="absolute inset-0 w-full h-full object-cover"
-                  src={special.imageUrl}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-4">
-                  <Badge variant="promo" size="xs" className="w-fit mb-1">
-                    SPECIAL
-                  </Badge>
-                  <h3 className="text-white font-bold text-lg">{special.name}</h3>
-                  <p className="text-white/80 text-xs">{special.description}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Food List */}
-      <section className="mt-8 px-4">
-        <h2 className="text-lg font-bold text-gray-900 dark:text-gray-50 mb-4">
-          {selectedCategory === 'All' ? 'Popular Items' : selectedCategory}
-        </h2>
-
-        {isLoading ? (
-          <div className="flex justify-center py-12">
-            <Spinner size="lg" />
-          </div>
-        ) : filteredItems.length === 0 ? (
-          <div className="text-center py-12">
-            <Icon name="search_off" size={48} className="text-gray-300 mx-auto mb-2" />
-            <p className="text-gray-500">No items found</p>
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm('')}
-                className="mt-4 text-primary font-semibold"
-              >
-                Clear search
-              </button>
+        {/* Vendors List */}
+        <section className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="font-headline text-headline-md text-on-surface">
+              Available Vendors
+            </h2>
+            {vendors && vendors.length > 0 && (
+              <span className="text-label-md text-on-surface-variant">
+                {vendors.length} vendor{vendors.length !== 1 ? 's' : ''}
+              </span>
             )}
           </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-4">
-            {filteredItems.map((item) => (
-              <FoodCard
-                key={item.id}
-                item={item}
-                onAddToCart={() => handleAddToCart(item)}
-              />
-            ))}
-          </div>
-        )}
-      </section>
 
-      {/* Bottom padding for navigation */}
-      <div className="h-20" />
+          {/* Loading State */}
+          {vendorsLoading && (
+            <ContentLoader message="Loading vendors..." />
+          )}
 
-      {/* Floating Cart Button */}
-      {itemCount > 0 && (
-        <motion.button
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          className="fixed bottom-20 right-4 bg-primary text-white rounded-full w-14 h-14 flex items-center justify-center shadow-xl shadow-primary/30 z-40"
-          onClick={() => window.location.href = '/employee/cart'}
-        >
-          <Icon name="shopping_cart" fill={1} size={24} />
-          <span className="absolute -top-1 -right-1 bg-white text-primary text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-            {itemCount}
-          </span>
-        </motion.button>
-      )}
+          {/* Empty State */}
+          {!vendorsLoading && (!vendors || vendors.length === 0) && (
+            <div className="text-center py-12 space-y-4">
+              <div className="w-16 h-16 mx-auto rounded-2xl bg-surface-container flex items-center justify-center">
+                <AlertCircle size={32} className="text-on-surface-variant" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="font-headline text-headline-sm text-on-surface">
+                  No Vendors Available
+                </h3>
+                <p className="text-body-md text-on-surface-variant max-w-sm mx-auto">
+                  There are no vendors available at this location right now. Please try a different location.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => setShowLocationModal(true)}
+              >
+                Change Location
+              </Button>
+            </div>
+          )}
+
+          {/* Vendors Grid */}
+          {!vendorsLoading && vendors && vendors.length > 0 && (
+            <div className="grid grid-cols-1 gap-4">
+              {vendors.map((vendor) => (
+                <motion.button
+                  key={vendor.id}
+                  onClick={() => handleVendorClick(vendor)}
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
+                  className="bg-surface-container-lowest rounded-xl p-4 shadow-card hover:shadow-ambient transition-all text-left"
+                >
+                  <div className="flex items-start gap-4">
+                    {/* Vendor Image/Logo */}
+                    <div className="w-20 h-20 flex-shrink-0 rounded-xl bg-surface-container overflow-hidden">
+                      {vendor.logoUrl ? (
+                        <img
+                          src={vendor.logoUrl}
+                          alt={vendor.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Store size={32} className="text-on-surface-variant opacity-40" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Vendor Info */}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-headline text-headline-sm text-on-surface mb-1">
+                        {vendor.name}
+                      </h3>
+                      {vendor.description && (
+                        <p className="text-label-md text-on-surface-variant line-clamp-2 mb-2">
+                          {vendor.description}
+                        </p>
+                      )}
+
+                      {/* Meta Info */}
+                      <div className="flex items-center gap-3 text-label-sm text-on-surface-variant">
+                        {vendor.cuisineType && (
+                          <span>{vendor.cuisineType}</span>
+                        )}
+                        {vendor.rating && (
+                          <span className="flex items-center gap-1">
+                            ⭐ {vendor.rating.toFixed(1)}
+                          </span>
+                        )}
+                        {vendor.prepTime && (
+                          <span>~{vendor.prepTime} min</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Arrow */}
+                    <ChevronRight size={20} className="text-on-surface-variant flex-shrink-0 mt-2" />
+                  </div>
+
+                  {/* Status Badge */}
+                  {vendor.isOpen === false && (
+                    <div className="mt-3 px-3 py-1 bg-error/10 rounded-lg inline-block">
+                      <span className="text-label-sm text-error font-semibold">Closed</span>
+                    </div>
+                  )}
+                </motion.button>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
+
+      {/* Location Selector Modal */}
+      <Modal
+        isOpen={showLocationModal}
+        onClose={() => setShowLocationModal(false)}
+        title="Change Location"
+        size="lg"
+      >
+        <LocationSelector
+          onComplete={handleLocationComplete}
+          showVendorSelection={false}
+        />
+      </Modal>
     </div>
   );
 };
 
-export default EmployeeMenuHome;
+export default MenuHomePage;
