@@ -28,7 +28,7 @@ function App() {
     // Log app initialization in development
     if (import.meta.env.DEV) {
       console.log('🚀 BiteDash initialized');
-      console.log('📡 API URL:', import.meta.env.VITE_API_BASE_URL || 'http://localhost:8089');
+      console.log('📡 API URL:', import.meta.env.API_BASE_URL || 'http://localhost:8089');
     }
   }, []);
 

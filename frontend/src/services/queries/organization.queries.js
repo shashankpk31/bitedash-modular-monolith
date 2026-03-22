@@ -49,7 +49,7 @@ export const useOrganization = (organizationId) => {
  */
 export const useLocations = (organizationId) => {
   return useQuery({
-    queryKey: QUERY_KEYS.LOCATIONS,
+    queryKey: QUERY_KEYS.LOCATION_BY_ID(organizationId),
     queryFn: () => getLocationsByOrganization(organizationId),
     enabled: !!organizationId,
     staleTime: 1000 * 60 * 5,
@@ -74,7 +74,7 @@ export const useLocation = (locationId) => {
  */
 export const useOffices = (locationId) => {
   return useQuery({
-    queryKey: ['offices', locationId],
+    queryKey: QUERY_KEYS.OFFICE_BY_ID(locationId),
     queryFn: () => getOfficesByLocation(locationId),
     enabled: !!locationId,
     staleTime: 1000 * 60 * 5,
@@ -86,7 +86,7 @@ export const useOffices = (locationId) => {
  */
 export const useOffice = (officeId) => {
   return useQuery({
-    queryKey: ['office', officeId],
+    queryKey: QUERY_KEYS.OFFICE_BY_ID(officeId),
     queryFn: () => getOfficeById(officeId),
     enabled: !!officeId,
     staleTime: 1000 * 60 * 5,
@@ -99,7 +99,7 @@ export const useOffice = (officeId) => {
  */
 export const useCafeterias = (officeId) => {
   return useQuery({
-    queryKey: QUERY_KEYS.CAFETERIAS(officeId),
+    queryKey: QUERY_KEYS.CAFETERIAS_BY_OFFICE(officeId),
     queryFn: () => getCafeteriasByOffice(officeId),
     enabled: !!officeId,
     staleTime: 1000 * 60 * 5,
@@ -111,7 +111,7 @@ export const useCafeterias = (officeId) => {
  */
 export const useCafeteria = (cafeteriaId) => {
   return useQuery({
-    queryKey: ['cafeteria', cafeteriaId],
+    queryKey: QUERY_KEYS.CAFETERIA_BY_ID(cafeteriaId),
     queryFn: () => getCafeteriaById(cafeteriaId),
     enabled: !!cafeteriaId,
     staleTime: 1000 * 60 * 5,
@@ -124,7 +124,7 @@ export const useCafeteria = (cafeteriaId) => {
  */
 export const useVendors = (cafeteriaId) => {
   return useQuery({
-    queryKey: QUERY_KEYS.VENDORS(cafeteriaId),
+    queryKey: QUERY_KEYS.VENDORS_BY_CAFETERIA(cafeteriaId),
     queryFn: () => getVendorsByCafeteria(cafeteriaId),
     enabled: !!cafeteriaId,
     // Refetch more frequently - vendor availability changes
@@ -138,7 +138,7 @@ export const useVendors = (cafeteriaId) => {
  */
 export const useVendor = (vendorId) => {
   return useQuery({
-    queryKey: ['vendor', vendorId],
+    queryKey: QUERY_KEYS.VENDOR_BY_ID(vendorId),
     queryFn: () => getVendorById(vendorId),
     enabled: !!vendorId,
     staleTime: 1000 * 60 * 2,
@@ -150,7 +150,7 @@ export const useVendor = (vendorId) => {
  */
 export const useVendorStats = (vendorId) => {
   return useQuery({
-    queryKey: ['vendorStats', vendorId],
+    queryKey: QUERY_KEYS.ORG_STATS(vendorId),
     queryFn: () => getVendorStats(vendorId),
     enabled: !!vendorId,
     // Stats update less frequently

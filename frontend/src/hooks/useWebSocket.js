@@ -44,7 +44,7 @@ const useWebSocket = (options = {}) => {
     console.log('[WebSocket] Initiating connection...');
 
     const token = localStorage.getItem(LOCL_STRG_KEY.TOKEN);
-    const wsUrl = import.meta.env.VITE_WS_URL || 'http://localhost:8089/ws';
+    const wsUrl = import.meta.env.API_BASE_URL+"/ws" || 'http://localhost:8089/ws';
 
     // Create STOMP client with SockJS
     const client = new Client({

@@ -24,7 +24,7 @@ export const AUTH_CONST = {
 };
 
 // API base URL from environment
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8089';
+export const API_BASE_URL = import.meta.env.API_BASE_URL || 'http://localhost:8089';
 
 // API path prefixes
 export const API_PATHS = {
