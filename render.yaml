@@ -9,7 +9,7 @@ services:
   - type: web
     name: bitedash
     runtime: docker
-    dockerfilePath: ./bitedash-modular-backend/Dockerfile
+    dockerfilePath: bitedash-modular-backend/Dockerfile
     dockerContext: ./bitedash-modular-backend
     region: oregon
     plan: free
