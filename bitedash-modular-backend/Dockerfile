@@ -1,32 +1,33 @@
 # Stage 1: Build Frontend inside Render
 FROM node:20-alpine AS frontend-builder
 WORKDIR /app
-COPY ../frontend/package*.json ./
+COPY frontend/package*.json ./
 RUN npm ci
-COPY ../frontend/ ./
+COPY frontend/ ./
 RUN npm run build
 
 # Stage 2: Bundle into Spring Boot
 FROM maven:3.9-eclipse-temurin-17 AS backend-builder
 WORKDIR /app
-COPY pom.xml .
-COPY shared-module/ ./shared-module/
-COPY identity-module/ ./identity-module/
-COPY organisation-module/ ./organisation-module/
-COPY menu-module/ ./menu-module/
-COPY inventory-module/ ./inventory-module/
-COPY order-module/ ./order-module/
-COPY wallet-module/ ./wallet-module/
-COPY payment-module/ ./payment-module/
-COPY notification-module/ ./notification-module/
-COPY app-module/ ./app-module/
+COPY bitedash-modular-backend/pom.xml .
+COPY bitedash-modular-backend/shared-module/ ./shared-module/
+COPY bitedash-modular-backend/identity-module/ ./identity-module/
+COPY bitedash-modular-backend/organisation-module/ ./organisation-module/
+COPY bitedash-modular-backend/menu-module/ ./menu-module/
+COPY bitedash-modular-backend/inventory-module/ ./inventory-module/
+COPY bitedash-modular-backend/order-module/ ./order-module/
+COPY bitedash-modular-backend/wallet-module/ ./wallet-module/
+COPY bitedash-modular-backend/payment-module/ ./payment-module/
+COPY bitedash-modular-backend/notification-module/ ./notification-module/
+COPY bitedash-modular-backend/app-module/ ./app-module/
 
-# This line pulls the freshly built frontend from Stage 1 directly into your resources
+# Copy React build straight to the static resources directory
 COPY --from=frontend-builder /app/dist ./app-module/src/main/resources/static/
 
-RUN mvn clean package -DskipTests
+# Run the build tool out of the virtual app directory
+RUN mvn -f pom.xml clean package -DskipTests
 
-# Stage 3: Light Final Runtime
+# Stage 3: Light Final Runtime Container
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 COPY --from=backend-builder /app/app-module/target/*.jar app.jar
