@@ -174,6 +174,8 @@ bite-env.sh
 aws.sh
 qwen.sh
 *.sh
+*.bat
+app-module/src/main/resources/static/
 
 # Package lock (optional - some teams commit this)
 # package-lock.json
