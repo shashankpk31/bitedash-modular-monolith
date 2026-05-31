@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: bitedash-postgres
+    environment:
+      POSTGRES_DB: bitedash_monolith
+      POSTGRES_USER: hbadmin
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Initialize database with schema on first run
+      - ./app-module/src/main/resources/db:/docker-entrypoint-initdb.d
+    networks:
+      - bitedash-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bitedash_user -d bitedash"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for OTP storage
+  redis:
+    image: redis:7-alpine
+    container_name: bitedash-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - bitedash-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: redis-server --appendonly yes
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  bitedash-network:
+    driver: bridge

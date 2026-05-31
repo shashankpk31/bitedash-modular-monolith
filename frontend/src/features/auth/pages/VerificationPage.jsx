@@ -63,10 +63,7 @@ const VerificationPage = () => {
       inputRefs.current[index + 1]?.focus();
     }
 
-    // Auto-submit when all digits entered
-    if (index === 5 && value && newOtp.every(digit => digit)) {
-      handleVerify(newOtp.join(''));
-    }
+    // Note: Auto-submit removed - user must click Verify button
   };
 
   // Handle key down (backspace)
@@ -93,10 +90,7 @@ const VerificationPage = () => {
     const focusIndex = Math.min(pastedData.length, 5);
     inputRefs.current[focusIndex]?.focus();
 
-    // Auto-submit if complete
-    if (pastedData.length === 6) {
-      handleVerify(pastedData);
-    }
+    // Note: Auto-submit on paste removed - user must click Verify button
   };
 
   // Verify OTP

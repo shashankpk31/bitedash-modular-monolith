@@ -1,83 +1,68 @@
-# Markdown files (keep deployment guides, exclude sensitive docs)
-*.md
-!README.md
-!readme.md
-!RAILWAY_DEPLOYMENT_GUIDE.md
-!DEPLOYMENT_CHECKLIST.md
-# Explicitly ignore sensitive documentation
-CLAUDE.md
-DEPLOYMENT.md
+# ==========================================
+# BiteDash Backend - .gitignore
+# ==========================================
 
-# Compiled class files
-*.class
+# ==========================================
+# Maven Build
+# ==========================================
 target/
-out/
+**/target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
 
-# Log files
-*.log
-logs/
+# Keep Maven wrapper for CI/CD
+# .mvn/
+# mvnw
+# mvnw.cmd
 
-# Package Files
+# ==========================================
+# Compiled Files
+# ==========================================
+*.class
 *.jar
 *.war
-*.nar
 *.ear
-*.zip
-*.tar.gz
-*.rar
+*.nar
 
-# Shell scripts - ignore credential files, keep deployment scripts
-bite-env.sh
-*.sh
-!build-for-deployment.sh
-!init-database.sh
-
-# Maven
-.mvn/
-mvnw
-mvnw.cmd
-
-# IDE
+# ==========================================
+# IDE & Editors
+# ==========================================
+# IntelliJ IDEA
 .idea/
 *.iml
 *.iws
 *.ipr
-.vscode/
+
+# Eclipse / STS
 .classpath
 .project
 .settings/
-
-# Eclipse/Spring Tools IDE
+.metadata/
+bin/
 .factorypath
-.apt_generated
-.apt_generated_tests
+.apt_generated/
+.apt_generated_tests/
 .springBeans
 
-# OS
-.DS_Store
-Thumbs.db
+# VS Code
+.vscode/
 
-# Environment - NEVER commit files with real credentials!
+# ==========================================
+# Environment & Secrets
+# ==========================================
 .env
 .env.*
 !.env.example
-bite-env.sh
-deployment-config.txt
 
-# Spring Boot
-spring.log
-
-# Database
-*.db
-*.sqlite
-
-# Application Properties (keep templates, ignore actual configs)
-application-local.properties
+# Local config files
 application-local.yml
-# Note: application-dev.yml and application-prod.yml ARE committed to repo for deployment
-# but never commit secrets - use environment variables instead!
+application-local.properties
+bite-env.sh
 
-# Secrets & Keys
+# Secrets
 *.pem
 *.key
 *.cert
@@ -85,29 +70,60 @@ application-local.yml
 *.jks
 secrets/
 
-# Temporary files
+# ==========================================
+# Logs & Debug
+# ==========================================
+*.log
+logs/
+spring.log
+debug.log
+error.txt
+
+# ==========================================
+# Database Files
+# ==========================================
+*.db
+*.mv.db
+*.trace.db
+*.sqlite
+data/
+
+# ==========================================
+# Test Reports
+# ==========================================
+**/surefire-reports/
+**/failsafe-reports/
+coverage/
+htmlcov/
+
+# ==========================================
+# OS Files
+# ==========================================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ==========================================
+# Temporary
+# ==========================================
 *.tmp
 *.bak
 *.swp
 *~
 .cache/
 
-# Test coverage reports
-coverage/
-.nyc_output/
-htmlcov/
+# ==========================================
+# Package Archives
+# ==========================================
+*.zip
+*.tar.gz
+*.rar
 
-# Node modules (if any frontend assets)
-node_modules/
-npm-debug.log
-yarn-error.log
-
-# Build output
-dist/
-build/
-
-# Error and debug files
-error.txt
-debug.log
-.env*
-deployment-config.txt
+# ==========================================
+# Keep Important Files
+# ==========================================
+!README.md
+!RUNNING_IN_IDE.md
+!.env.example
+!Dockerfile
+!docker-compose*.yml

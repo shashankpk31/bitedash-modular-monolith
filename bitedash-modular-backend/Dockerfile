@@ -1,4 +1,28 @@
 # Multi-stage build for smaller image size
+
+# ============================================
+# Stage 1: Build Frontend (Node.js)
+# ============================================
+FROM node:20-alpine AS frontend-build
+
+WORKDIR /frontend
+
+# Copy frontend package files
+COPY ../frontend/package*.json ./
+
+# Install dependencies
+RUN npm ci --only=production
+
+# Copy frontend source
+COPY ../frontend/ ./
+
+# Build frontend with empty API URL (relative URLs for same-origin)
+ENV VITE_API_BASE_URL=""
+RUN npm run build
+
+# ============================================
+# Stage 2: Build Backend (Maven + Java)
+# ============================================
 FROM maven:3.9-eclipse-temurin-17-alpine AS build
 
 # Set working directory
@@ -32,11 +56,11 @@ COPY inventory-module/src inventory-module/src
 COPY notification-module/src notification-module/src
 COPY app-module/src app-module/src
 
-# Copy frontend build to static resources (if exists)
-# This allows the JAR to serve the React frontend
-COPY app-module/src/main/resources/static app-module/src/main/resources/static
+# Copy frontend build from frontend-build stage to static resources
+# This bundles React frontend into the Spring Boot JAR
+COPY --from=frontend-build /frontend/dist /app/app-module/src/main/resources/static/
 
-# Build the application
+# Build the application (frontend is now bundled in /static)
 RUN mvn clean package -DskipTests -pl app-module -am
 
 # Runtime stage

@@ -10,6 +10,7 @@
     <meta name="description" content="BiteDash - Premium Corporate Dining Platform. Order delicious food from your workplace cafeteria with ease." />
 
     <!-- Apple PWA Meta Tags -->
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="BiteDash" />
@@ -96,6 +97,10 @@
 
     <!-- React root -->
     <div id="root"></div>
+
+    <!-- Razorpay Checkout SDK (production payments only - simulator uses its own checkout page) -->
+    <!-- Warning: "otp-credentials" feature flag is from Razorpay SDK and can be safely ignored -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
     <script type="module" src="/src/main.jsx"></script>
 

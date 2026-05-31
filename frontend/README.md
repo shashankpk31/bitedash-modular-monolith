@@ -115,6 +115,13 @@ BiteDash supports 4 user roles:
 3. **VENDOR** - Vendor management
 4. **EMPLOYEE** - Food ordering
 
+### Security Features (Updated 2026-05-30)
+
+- **HTTP-only Cookies**: JWT tokens stored in secure cookies, not localStorage
+- **XSS Protection**: JavaScript cannot access auth tokens
+- **SameSite=Lax**: CSRF protection on state-changing requests
+- **Automatic Credentials**: Cookies sent automatically with `withCredentials: true`
+
 ### Protected Routes
 
 ```jsx
@@ -226,8 +233,11 @@ npm run dev
 Create `.env` file:
 
 ```bash
+# API URL - VITE_ prefix required for Vite
 VITE_API_BASE_URL=http://localhost:8089
 ```
+
+> **Note**: The `VITE_` prefix is required for Vite to expose env variables to the client.
 
 ### Available Scripts
 

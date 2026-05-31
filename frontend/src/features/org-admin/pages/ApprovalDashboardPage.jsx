@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { CheckCircle, XCircle, Clock, Store, User, Mail, Phone, MapPin } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 import Button from '../../../common/components/Button';
 import Card, { CardContent } from '../../../common/components/Card';
 import Badge from '../../../common/components/Badge';
@@ -10,7 +11,7 @@ import { ContentLoader } from '../../../common/components/Spinner';
 import { useAuth } from '../../../contexts';
 import { formatDateTime } from '../../../common/utils';
 import { getPendingApprovals, updateUserStatus } from '../../../services/api/auth.api';
-import { QUERY_KEYS } from '../../../config/constants';
+import { QUERY_KEYS, TOAST_DURATION } from '../../../config/constants';
 
 // Approval Dashboard Page - Approve/reject pending vendors and employees
 // Why? Org admins need to review and approve new vendors and employees
@@ -63,11 +64,13 @@ const ApprovalDashboardPage = () => {
     },
     onError: (error) => {
       console.error('Failed to approve user:', error);
-      alert('Failed to approve user. Please try again.');
+      toast.error('Failed to approve user. Please try again.', { duration: TOAST_DURATION.ERROR });
     },
   });
 
   // Mutation for rejecting users
+  // WHY BLOCKED status instead of DELETE? Maintains audit trail - we can see who was
+  // rejected and when, vs permanent deletion which loses that history.
   const rejectMutation = useMutation({
     mutationFn: (userId) => updateUserStatus(userId, 'BLOCKED'),
     onSuccess: () => {
@@ -77,7 +80,7 @@ const ApprovalDashboardPage = () => {
     },
     onError: (error) => {
       console.error('Failed to reject user:', error);
-      alert('Failed to reject user. Please try again.');
+      toast.error('Failed to reject user. Please try again.', { duration: TOAST_DURATION.ERROR });
     },
   });
 
@@ -104,12 +107,13 @@ const ApprovalDashboardPage = () => {
     }
   };
 
-  // Stats
-  const stats = {
+  // WHY useMemo for stats? Prevents recalculating on every render.
+  // Filter operations iterate the entire array - expensive for large lists.
+  const stats = useMemo(() => ({
     total: pendingRequests.length,
     vendors: pendingRequests.filter(r => r.type === 'vendor').length,
     employees: pendingRequests.filter(r => r.type === 'employee').length,
-  };
+  }), [pendingRequests]);
 
   return (
     <div className="h-full flex flex-col">

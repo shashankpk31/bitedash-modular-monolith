@@ -6,10 +6,10 @@ import org.springframework.stereotype.Service;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
-import java.util.Random;
 
 @Service
 public class QRCodeService {
@@ -22,7 +22,7 @@ public class QRCodeService {
 	public String generateOrderNumber() {
 		LocalDate today = LocalDate.now();
 		String datePart = today.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-		String randomPart = String.format("%05d", new Random().nextInt(100000));
+		String randomPart = String.format("%05d", new SecureRandom().nextInt(100000));
 		return "ORD-" + datePart + "-" + randomPart;
 	}
 

@@ -138,17 +138,15 @@ public class OrganizationService {
 				log.warn("Failed to fetch employee count from Identity service: {}", e.getMessage());
 			}
 
-			// Count active vendors (simplified - counts all active vendors for now)
+			// Count active vendors efficiently (database count instead of loading all)
 			// TODO: Filter vendors by organization through cafeteria mappings
 			log.debug("Counting active vendors...");
-			int activeVendors = (int) vendorRepository.findAll().stream()
-				.filter(vendor -> Boolean.TRUE.equals(vendor.getIsActive()))
-				.count();
+			int activeVendors = (int) vendorRepository.countByIsActiveTrue();
 			log.debug("Active vendors: {}", activeVendors);
 
-			// Count locations for this organization
+			// Count locations for this organization efficiently
 			log.debug("Counting locations for org: {}", organizationId);
-			int totalLocations = locationRepository.findByOrganization_Id(organizationId).size();
+			int totalLocations = (int) locationRepository.countByOrganization_Id(organizationId);
 			log.debug("Total locations: {}", totalLocations);
 
 			// Monthly spend and total orders - requires Order/Payment service integration

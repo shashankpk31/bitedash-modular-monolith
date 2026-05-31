@@ -34,12 +34,32 @@ public class StaticResourceConfig implements WebMvcConfigurer {
                 .setCachePeriod(31536000); // Cache for 1 year (immutable assets)
 
         // Serve all other requests through index.html for SPA routing
+        // IMPORTANT: This must NOT match API routes (auth, payment, wallet, etc.)
+        // API routes are handled by @RestController classes
         registry.addResourceHandler("/**")
                 .addResourceLocations("classpath:/static/")
                 .resourceChain(true)
                 .addResolver(new PathResourceResolver() {
                     @Override
                     protected Resource getResource(String resourcePath, Resource location) throws IOException {
+                        // Skip API routes - let controllers handle them
+                        if (resourcePath.startsWith("auth/") ||
+                            resourcePath.startsWith("payment/") ||
+                            resourcePath.startsWith("wallet/") ||
+                            resourcePath.startsWith("orders/") ||
+                            resourcePath.startsWith("menus/") ||
+                            resourcePath.startsWith("inventory/") ||
+                            resourcePath.startsWith("organization/") ||
+                            resourcePath.startsWith("organisation/") ||
+                            resourcePath.startsWith("revenue/") ||
+                            resourcePath.startsWith("user/") ||
+                            resourcePath.startsWith("ws/") ||
+                            resourcePath.startsWith("actuator/") ||
+                            resourcePath.startsWith("swagger-ui/") ||
+                            resourcePath.startsWith("v3/")) {
+                            return null; // Let Spring MVC handle API routes
+                        }
+
                         Resource requestedResource = location.createRelative(resourcePath);
 
                         // If the resource exists (file/asset), return it

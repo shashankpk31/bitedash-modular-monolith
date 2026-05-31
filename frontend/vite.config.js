@@ -8,6 +8,12 @@ export default defineConfig(({ mode }) => {
   const targetUrl = env.VITE_API_URL || 'http://localhost:8089';
 
   return {
+    // Fix for sockjs-client: Define global and process for browser
+    define: {
+      global: 'globalThis',
+      'process.env': {},
+    },
+
     plugins: [
       react(),
 

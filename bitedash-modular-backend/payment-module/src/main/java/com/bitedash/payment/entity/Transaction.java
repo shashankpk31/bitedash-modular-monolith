@@ -20,8 +20,14 @@ public class Transaction extends BaseEntity {
 	@Column(name = "user_id", nullable = false)
 	private Long userId;
 
-	@Column(name = "order_id", nullable = false)
-	private Long orderId;
+	@Column(name = "order_id")
+	private Long orderId;  // Nullable for wallet top-ups
+
+	@Column(name = "description", length = 255)
+	private String description;
+
+	@Column(name = "type", length = 50)
+	private String type = "ORDER_PAYMENT";  // ORDER_PAYMENT, WALLET_TOPUP, REFUND
 
 	@Column(precision = 10, scale = 2, nullable = false)
 	private BigDecimal amount;

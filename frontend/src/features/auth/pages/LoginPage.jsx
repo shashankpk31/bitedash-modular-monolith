@@ -55,7 +55,7 @@ const LoginPage = () => {
 
     // Clear error when user starts typing
     if (errors.userIdentifier) {
-      setErrors({ ...errors, identifier: '' });
+      setErrors({ ...errors, userIdentifier: '' });
     }
   };
 
@@ -70,9 +70,6 @@ const LoginPage = () => {
     e.preventDefault();
 
     if (!validate()) return;
-
-    console.log(formData);
-    
 
     // Call login mutation
     loginMutation.mutate({

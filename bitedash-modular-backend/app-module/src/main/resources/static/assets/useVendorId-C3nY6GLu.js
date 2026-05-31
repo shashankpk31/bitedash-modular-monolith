@@ -1,0 +1,1 @@
+import{u as n}from"./useQuery-XW4fwPN1.js";import{h as d}from"./organization.api-CHgl-G7B.js";import{y as s}from"./index-nTrZrzyn.js";const m=()=>{const{data:r,isLoading:e,error:o}=n({queryKey:[s.VENDORS,"my-vendor"],queryFn:d,staleTime:3e5});return{vendorId:r?.id||null,vendor:r,isLoading:e,error:o}};export{m as u};

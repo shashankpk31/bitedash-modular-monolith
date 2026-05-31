@@ -1,32 +1,91 @@
-# 🍔 BiteDash - Food Ordering Platform
+# 🍽️ BiteDash - Corporate Cafeteria Management System
 
-A comprehensive food ordering platform built as a **modular monolith** with Spring Boot and React.
+![Java](https://img.shields.io/badge/Java-17-orange) ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3-green) ![React](https://img.shields.io/badge/React-19-blue) ![License](https://img.shields.io/badge/License-MIT-yellow)
 
-## 📋 Project Overview
+> Modern food ordering platform for corporate cafeterias with wallet management, multi-vendor support, and real-time order tracking.
 
-**BiteDash** is a full-stack food ordering application that consolidates a microservices architecture into a modular monolith for easier deployment and maintenance.
+---
 
-### Tech Stack
+## 📋 Table of Contents
 
-**Backend:**
-- Java 17
-- Spring Boot 3.x
-- PostgreSQL
-- Redis (for OTP/caching)
-- Spring Security + JWT
-- WebSockets (real-time updates)
+- [Features](#-features)
+- [Tech Stack](#-tech-stack)
+- [Architecture](#-architecture)
+- [Quick Start](#-quick-start)
+- [Test Credentials](#-test-credentials)
+- [API Documentation](#-api-documentation)
+- [Deployment](#-deployment)
+- [Project Structure](#-project-structure)
+- [Environment Variables](#-environment-variables)
+- [License](#-license)
 
-**Frontend:**
-- React 19.2.0
-- Vite 7.2.4
-- React Router
-- Axios
-- Tailwind CSS (if applicable)
+---
 
-**Deployment:**
-- Railway (Platform-as-a-Service)
-- Docker
-- Single JAR deployment with embedded frontend
+## ✨ Features
+
+### 🔐 Multi-Role Authentication
+- **Super Admin**: Platform management and monitoring
+- **Org Admin**: Organization, location, and vendor management
+- **Vendor**: Menu management and order processing
+- **Employee**: Browse menus, place orders, manage wallet
+
+### 💰 Wallet System
+- Credit/debit wallet with transaction history
+- Razorpay integration for top-ups
+- Balance tracking and analytics
+- Secure payment processing
+
+### 📦 Order Management
+- Real-time order tracking with WebSocket
+- QR code generation for order pickup
+- Order history and status updates
+- Multi-vendor order support
+
+### 🏪 Multi-Vendor Support
+- Vendor registration and approval workflow
+- Individual vendor menus with categories
+- Cafeteria-to-vendor mapping
+- Vendor analytics dashboard
+
+### 📊 Analytics & Reporting
+- Platform revenue tracking
+- Vendor performance metrics
+- Employee spending analytics
+- Daily/weekly/monthly reports
+
+### 🎨 Modern UI/UX
+- Responsive design (mobile-first)
+- Material Design 3 (Stitch Palette)
+- Dark/light theme support
+- Smooth animations with Framer Motion
+
+---
+
+## 🛠️ Tech Stack
+
+### Backend
+- **Framework**: Spring Boot 3.3.12
+- **Language**: Java 17
+- **Database**: H2 (in-memory for production), PostgreSQL (local dev)
+- **Cache**: Redis (optional, for OTP)
+- **Authentication**: JWT with HTTP-only cookies
+- **Architecture**: Modular Monolith (9 modules)
+
+### Frontend
+- **Framework**: React 19.2.0
+- **Build Tool**: Vite 7.2.4
+- **Styling**: TailwindCSS 4
+- **State Management**: TanStack Query (React Query)
+- **Routing**: React Router 7
+- **Animations**: Framer Motion 12
+
+### DevOps & Deployment
+- **Container**: Docker (multi-stage builds)
+- **Hosting**: Render (free tier)
+- **CI/CD**: GitHub Actions (optional)
+- **Monitoring**: Spring Boot Actuator
+
+---
 
 ## 🏗️ Architecture
 
@@ -34,247 +93,289 @@ A comprehensive food ordering platform built as a **modular monolith** with Spri
 
 ```
 bitedash-modular-backend/
-├── shared-module/           # Shared DTOs, utilities, security
-├── identity-module/         # User authentication & authorization
-├── organisation-module/     # Organizations, vendors, cafeterias
-├── menu-module/            # Menu items, categories, promotions
-├── inventory-module/       # Stock management
-├── order-module/           # Order processing & tracking
-├── payment-module/         # Revenue & commission tracking
-├── wallet-module/          # User wallet management
-├── notification-module/    # Email/SMS notifications
-└── app-module/            # Main application & configuration
+├── shared-module        # Common utilities, security, DTOs
+├── identity-module      # Authentication, users, roles
+├── organisation-module  # Organizations, locations, offices, cafeterias
+├── menu-module          # Menus, categories, items, promotions
+├── inventory-module     # Stock management, purchase orders
+├── order-module         # Orders, QR codes, order tracking
+├── wallet-module        # User wallets, transactions
+├── payment-module       # Razorpay integration, payments
+├── notification-module  # Email/SMS notifications
+└── app-module           # Main application, configuration
 ```
 
-### Key Features
+**Why Modular Monolith?**
+- ✅ Simpler deployment than microservices
+- ✅ Faster development and testing
+- ✅ Easy to extract modules to services later
+- ✅ Shared transactions across modules
 
-✅ Multi-tenant organization support
-✅ Role-based access control (Super Admin, Org Admin, Vendor, Employee)
-✅ Real-time order tracking via WebSockets
-✅ Wallet-based payments
-✅ QR code order pickup
-✅ Commission tracking & revenue analytics
-✅ Email & SMS notifications
-✅ JWT-based authentication
-✅ Cross-module event-driven communication
+---
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
-- **Java 17+**
-- **Maven 3.8+**
-- **Node.js 18+**
-- **PostgreSQL 14+**
-- **Redis** (optional, for OTP)
+- **Java 17+** ([Download](https://adoptium.net/))
+- **Node.js 20+** ([Download](https://nodejs.org/))
+- **Maven 3.9+** (included in wrapper)
+- **Git** ([Download](https://git-scm.com/))
 
 ### Local Development
 
 #### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/bitedash.git
+git clone https://github.com/yourusername/bitedash.git
 cd bitedash
 ```
 
-#### 2. Set Up Backend
+#### 2. Start Backend
 
 ```bash
-# Navigate to backend
 cd bitedash-modular-backend
 
-# Create .env file (copy from .env.example)
+# Copy environment template (optional for local H2)
 cp .env.example .env
 
-# Edit .env with your database credentials
-# DATABASE_URL=jdbc:postgresql://localhost:5432/bitedash
-# DATABASE_USERNAME=your_user
-# DATABASE_PASSWORD=your_password
-# JWT_SECRET=your_jwt_secret_here
+# Run with Maven
+./mvnw spring-boot:run
 
-# Run database initialization script
-psql -U your_user -d bitedash -f app-module/src/main/resources/db/V1__init_all_tables.sql
-
-# Build and run
-mvn spring-boot:run -pl app-module
+# OR build and run JAR
+./mvnw clean package -DskipTests
+java -jar app-module/target/bitedash-app.jar
 ```
 
-Backend will run on: `http://localhost:8089`
+Backend runs on: **http://localhost:8089**
 
-#### 3. Set Up Frontend
+#### 3. Start Frontend (Separate Terminal)
 
 ```bash
-# Navigate to frontend
 cd frontend
 
 # Install dependencies
 npm install
 
 # Create .env file
-echo "VITE_API_BASE_URL=http://localhost:8089" > .env
+cp .env.example .env
 
-# Run development server
+# Start development server
 npm run dev
 ```
 
-Frontend will run on: `http://localhost:5173`
+Frontend runs on: **http://localhost:5173**
 
-## 🌐 Deploy to Railway
+#### 4. Access the Application
 
-### One-Command Deployment
-
-**Windows:**
-```bash
-build-for-deployment.bat
-```
-
-**Linux/Mac:**
-```bash
-chmod +x build-for-deployment.sh
-./build-for-deployment.sh
-```
-
-This script:
-1. Builds the React frontend
-2. Copies frontend to backend `/static` folder
-3. Creates a single JAR with embedded frontend
-
-### Railway Setup
-
-See **[QUICKSTART-DEPLOYMENT.md](./QUICKSTART-DEPLOYMENT.md)** for complete Railway deployment instructions.
-
-**Quick steps:**
-1. Push code to GitHub/GitLab
-2. Create Railway project from repo
-3. Add PostgreSQL database in Railway
-4. Set environment variables (JWT_SECRET, etc.)
-5. Railway auto-deploys using Dockerfile
-6. Access at: `https://your-app.railway.app`
-
-## 📚 Documentation
-
-- **[QUICKSTART-DEPLOYMENT.md](./QUICKSTART-DEPLOYMENT.md)** - Quick Railway deployment guide
-- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Detailed deployment documentation
-- **[CLAUDE.md](./CLAUDE.md)** - Development notes & architecture details
-
-## 🔐 Security
-
-### Fixed Security Issues
-
-✅ Role-based authorization properly enforced
-✅ Wallet initialization requires admin role
-✅ Database credentials moved to environment variables
-✅ JWT secret requires environment variable
-✅ Password validation (8+ chars, uppercase, lowercase, digit, special)
-✅ Order authorization checks (user owns order)
-✅ Public cafeteria endpoints require authentication
-
-### Production Security Checklist
-
-- [ ] Use strong JWT secret (64+ characters)
-- [ ] Use strong database password
-- [ ] Enable HTTPS (Railway does this automatically)
-- [ ] Set `ddl-auto: validate` in production
-- [ ] Disable Swagger UI in production (already done in prod profile)
-- [ ] Restrict actuator endpoints
-- [ ] Use environment variables for all secrets
-- [ ] Enable rate limiting for OTP endpoints (recommended)
-
-## 🧪 API Documentation
-
-### Swagger UI (Development Only)
-
-Access API docs at: `http://localhost:8089/swagger-ui.html`
-
-**Note:** Swagger is disabled in production (`application-prod.yml`)
-
-### Key Endpoints
-
-**Authentication:**
-- `POST /auth/register` - Register new user
-- `POST /auth/login` - Login and get JWT token
-- `POST /auth/verify` - Verify OTP
-
-**Organizations:**
-- `GET /organization/public` - List all organizations (public)
-- `GET /organization/{id}` - Get organization details
-
-**Orders:**
-- `POST /orders` - Create new order
-- `GET /orders/my-orders` - Get current user's orders
-- `GET /orders/{id}` - Get order details
-- `PATCH /orders/{id}/status` - Update order status
-
-**Wallet:**
-- `GET /wallet/my-wallet` - Get current user's wallet
-- `POST /wallet/credit` - Add credits (Admin only)
-- `GET /wallet/transactions` - Get transaction history
-
-**Menu:**
-- `GET /menus/vendor/{vendorId}` - Get vendor menu
-- `GET /menus/items/{id}` - Get menu item details
-
-## 📊 Database Schema
-
-The application uses PostgreSQL with 7 schemas:
-
-- `identity_schema` - Users, roles, authentication
-- `organisation_schema` - Organizations, vendors, cafeterias
-- `order_schema` - Orders, order status history
-- `menu_schema` - Menu items, categories, promotions
-- `wallet_schema` - User wallets, transactions
-- `payment_schema` - Revenue tracking, commissions
-- `inventory_schema` - Stock management
-
-Initialize with:
-```bash
-psql -U user -d database -f bitedash-modular-backend/app-module/src/main/resources/db/V1__init_all_tables.sql
-```
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📝 License
-
-This project is proprietary. All rights reserved.
-
-## 🆘 Support
-
-For issues and questions:
-1. Check **[QUICKSTART-DEPLOYMENT.md](./QUICKSTART-DEPLOYMENT.md)** for deployment help
-2. Check **[DEPLOYMENT.md](./DEPLOYMENT.md)** for detailed troubleshooting
-3. Open an issue on GitHub
-
-## 📅 Changelog
-
-### 2026-02-18 - Production Ready
-- ✅ Completed all cross-module integrations
-- ✅ Wallet module fully implemented
-- ✅ Security fixes applied
-- ✅ API routing aligned with frontend
-- ✅ Railway deployment configured
-- ✅ Static frontend serving enabled
-
-### 2026-02-17 - Railway Setup
-- ✅ Database initialization scripts
-- ✅ Build automation scripts
-- ✅ Production configuration
-- ✅ Deployment documentation
-
-### 2026-02-16 - Security Hardening
-- ✅ Fixed authorization bypass vulnerabilities
-- ✅ Removed hardcoded credentials
-- ✅ Added password validation
-- ✅ Enhanced endpoint security
+- **Frontend**: http://localhost:5173
+- **Backend API**: http://localhost:8089
+- **H2 Console**: http://localhost:8089/h2-console
+  - **JDBC URL**: `jdbc:h2:mem:bitedash`
+  - **Username**: `sa`
+  - **Password**: *(leave empty)*
+- **API Docs**: http://localhost:8089/swagger-ui.html
 
 ---
 
-**Built with ❤️ for efficient food ordering**
+## 🔑 Test Credentials
 
-**Version:** 1.0.0
-**Last Updated:** 2026-02-18
+The application auto-populates with sample data on startup (prod profile).
+
+| Role | Email | Password | Access Level |
+|------|-------|----------|--------------|
+| **Super Admin** | admin@bitedash.com | Admin@123 | Full platform access |
+| **Org Admin** | orgadmin@techcorp.com | OrgAdmin@123 | TechCorp management |
+| **Vendor** | vendor@pizzacorner.com | Vendor@123 | Pizza Corner menu |
+| **Employee** | john.doe@techcorp.com | Employee@123 | ₹500 wallet balance |
+| **Employee** | jane.smith@techcorp.com | Employee@123 | ₹300 wallet balance |
+
+**Sample Data Includes:**
+- 1 Organization: **TechCorp Inc.**
+- 1 Location: **Bangalore, Karnataka**
+- 1 Office: **Tech Park HQ**
+- 1 Cafeteria: **Tech Park Food Court**
+- 2 Vendors: **Pizza Corner**, **South Indian Kitchen**
+- 15+ Menu Items across multiple categories
+- 3 Employees with active wallets
+
+---
+
+## 📚 API Documentation
+
+### Swagger UI (Development)
+
+**URL**: http://localhost:8089/swagger-ui.html
+**Status**: Disabled in production (security)
+
+### Postman Collection
+
+Import the Postman collection from `docs/BiteDash.postman_collection.json` (if available)
+
+### Key Endpoints
+
+| Category | Method | Endpoint | Description |
+|----------|--------|----------|-------------|
+| **Auth** | POST | `/auth/register` | Register new user |
+| **Auth** | POST | `/auth/login` | Login (returns JWT in cookie) |
+| **Auth** | POST | `/auth/logout` | Logout (clears cookies) |
+| **User** | GET | `/user/{id}` | Get user profile |
+| **Organization** | GET | `/organization/public` | List all organizations |
+| **Menu** | GET | `/menus/vendor/{id}` | Get vendor menu |
+| **Order** | POST | `/orders` | Place new order |
+| **Order** | GET | `/orders/my-orders` | Get user's orders |
+| **Wallet** | GET | `/wallet/my-wallet` | Get wallet balance |
+| **Wallet** | POST | `/wallet/credit` | Credit wallet (admin) |
+| **Payment** | POST | `/payment/create-order` | Create Razorpay order |
+| **Payment** | POST | `/payment/verify` | Verify payment |
+| **Health** | GET | `/actuator/health` | Health check |
+| **Keep-Alive** | GET | `/api/keep-alive` | Prevent Render sleep |
+
+---
+
+## 🌐 Deployment
+
+### Deploy to Render (Free Tier)
+
+#### Prerequisites
+1. GitHub account with this repo pushed
+2. Render account ([Sign up free](https://render.com))
+
+#### Steps
+
+1. **Connect GitHub to Render**
+   - Go to [Render Dashboard](https://dashboard.render.com/)
+   - Click "New" → "Blueprint"
+   - Connect your GitHub repository
+   - Render auto-detects `render.yaml`
+
+2. **Deploy**
+   - Render builds and deploys automatically
+   - Uses Docker multi-stage build (frontend → backend → runtime)
+   - H2 database auto-initialized with sample data
+   - First deploy takes ~5 minutes
+
+3. **Access Your App**
+   - **URL**: `https://bitedash.onrender.com` (or your custom domain)
+   - **Admin Panel**: `https://bitedash.onrender.com/admin`
+   - **H2 Console**: `https://bitedash.onrender.com/h2-console`
+
+#### Important Notes
+
+- **Free Tier Limitations**:
+  - Spins down after 15 minutes of inactivity
+  - Cold start takes 30-60 seconds
+  - 512 MB RAM
+  - **Solution**: Use [UptimeRobot](https://uptimerobot.com/) to ping `/api/keep-alive` every 14 minutes
+
+- **Database**: H2 in-memory (data resets on restart)
+  - ✅ Perfect for demos and recruiter testing
+  - ✅ Always fresh data
+  - ❌ Not suitable for production with persistent data
+  - **For production**: Switch to PostgreSQL in `application-prod.yml`
+
+---
+
+## 📁 Project Structure
+
+```
+bitedash/
+├── bitedash-modular-backend/    # Spring Boot backend
+│   ├── shared-module/
+│   ├── identity-module/
+│   ├── organisation-module/
+│   ├── menu-module/
+│   ├── inventory-module/
+│   ├── order-module/
+│   ├── wallet-module/
+│   ├── payment-module/
+│   ├── notification-module/
+│   ├── app-module/
+│   │   └── src/main/resources/
+│   │       ├── static/          # Frontend build output (bundled)
+│   │       ├── db/              # Database migration scripts
+│   │       └── application-*.yml
+│   ├── Dockerfile               # Multi-stage build
+│   └── pom.xml
+├── frontend/                    # React frontend
+│   ├── src/
+│   │   ├── common/             # Shared components
+│   │   ├── features/           # Feature modules
+│   │   │   ├── admin/
+│   │   │   ├── employee/
+│   │   │   ├── vendor/
+│   │   │   └── auth/
+│   │   ├── services/           # API services
+│   │   ├── contexts/           # React contexts
+│   │   └── config/             # Configuration
+│   ├── package.json
+│   └── vite.config.js
+├── render.yaml                  # Render deployment config
+├── README.md                    # This file
+└── LICENSE
+```
+
+---
+
+## 🔧 Environment Variables
+
+### Backend (application-prod.yml)
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `SPRING_PROFILES_ACTIVE` | Active profile | `prod` | ✅ |
+| `JWT_SECRET` | JWT signing key | Auto-generated | ✅ |
+| `PORT` | Server port | `8089` | ✅ |
+| `REDIS_HOST` | Redis host (optional) | `localhost` | ❌ |
+| `TWILIO_ACCOUNT_SID` | Twilio account (optional) | - | ❌ |
+| `MAIL_HOST` | SMTP host (optional) | - | ❌ |
+
+### Frontend (.env)
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `VITE_API_BASE_URL` | Backend API URL | `http://localhost:8089` | ✅ (dev) |
+| | | `""` (empty for prod) | ✅ (prod) |
+
+**Note**: In production (bundled), frontend uses relative URLs (empty string)
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please follow these steps:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 🙏 Acknowledgments
+
+- **Spring Boot** - Backend framework
+- **React** - Frontend library
+- **Render** - Free hosting platform
+- **Razorpay** - Payment gateway
+- **TailwindCSS** - Styling framework
+- **Material Design 3** - Design system
+
+---
+
+## 📞 Support
+
+For questions or issues:
+- **Open an Issue**: [GitHub Issues](https://github.com/yourusername/bitedash/issues)
+- **Email**: your.email@example.com
+
+---
+
+**Built with ❤️ for corporate cafeterias everywhere**

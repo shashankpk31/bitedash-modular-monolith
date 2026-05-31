@@ -2,13 +2,18 @@ spring:
   application:
     name: bitedash-app
 
+  # Disable default static resource handling - we use custom config for prod only
+  # In development, frontend runs separately on port 5173
+  web:
+    resources:
+      add-mappings: false  # Disable Spring Boot's default static resource handling
+
   datasource:
     # DATABASE_URL format: jdbc:postgresql://host:port/database
-    # For Docker dev: jdbc:postgresql://localhost:5432/bitedash
-    # For AWS prod: Set via environment variable
-    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/bitedash}
-    username: ${DATABASE_USERNAME:postgres}
-    password: ${DATABASE_PASSWORD:password}
+    # REQUIRED: Set via environment variables (no defaults for security)
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 20
@@ -94,6 +99,15 @@ jwt:
 qr:
   secret:
     key: ${QR_SECRET_KEY}
+
+# Razorpay Configuration (for payments)
+# For simulator: base-url=http://localhost:9000, key-id=rzp_test_simulator
+# For production: base-url=https://api.razorpay.com, key-id=rzp_live_xxx
+razorpay:
+  base-url: ${RAZORPAY_BASE_URL:http://localhost:9000}
+  key-id: ${RAZORPAY_KEY_ID:rzp_test_simulator}
+  key-secret: ${RAZORPAY_KEY_SECRET:sim_secret_key_12345}
+  webhook-secret: ${RAZORPAY_WEBHOOK_SECRET:whsec_simulator_webhook_secret}
 
 # Twilio Configuration (for SMS notifications)
 twilio:

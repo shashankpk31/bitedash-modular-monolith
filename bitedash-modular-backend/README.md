@@ -22,10 +22,19 @@ modular_bitedash/
 - **Single Deployment**: One JAR file for the entire application
 - **Modular Design**: Strong boundaries between business domains
 - **Shared Database**: Single PostgreSQL instance with schema separation
-- **JWT Authentication**: Stateless authentication with role-based access
+- **Secure JWT Authentication**: HTTP-only cookie-based auth (XSS-proof)
 - **AWS Ready**: Optimized for AWS EC2, Elastic Beanstalk, and ECS deployment
 - **Health Checks**: Built-in health endpoints for monitoring
 - **API Documentation**: Swagger UI at `/swagger-ui.html`
+
+## Security Features (Updated 2026-05-30)
+
+- **HTTP-only Cookies**: JWT tokens stored in secure cookies, not response body
+- **No Default Credentials**: Database and JWT secrets MUST be set via environment variables
+- **Pessimistic Locking**: Wallet operations use database locks to prevent double-spend
+- **Rate Limiting**: OTP verification limited to 5 attempts per 15 minutes
+- **IDOR Protection**: Users can only access their own resources
+- **Security Headers**: X-Frame-Options, X-Content-Type-Options, CSP, etc.
 
 ## Prerequisites
 
@@ -254,11 +263,14 @@ docker-compose up -d
 
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
-| `DATABASE_URL` | PostgreSQL JDBC URL | `jdbc:postgresql://localhost:5432/bitedash_monolith` | Yes |
-| `DATABASE_USERNAME` | Database username | `postgres` | Yes |
-| `DATABASE_PASSWORD` | Database password | `postgres` | Yes |
-| `JWT_SECRET` | JWT signing secret (min 256 bits) | (see application.yml) | Yes |
+| `DATABASE_URL` | PostgreSQL JDBC URL | **None** | **Yes** |
+| `DATABASE_USERNAME` | Database username | **None** | **Yes** |
+| `DATABASE_PASSWORD` | Database password | **None** | **Yes** |
+| `JWT_SECRET` | JWT signing secret (min 256 bits) | **None** | **Yes** |
+| `QR_SECRET_KEY` | QR code HMAC secret | **None** | **Yes** |
 | `PORT` | Application port | `8089` | No |
+
+> **Security Note**: No default credentials are provided. You MUST set all required environment variables before running in production.
 
 ## API Endpoints
 
@@ -442,9 +454,11 @@ spring:
 
 ### 401 Unauthorized errors
 
-- Ensure JWT token is included in `Authorization: Bearer <token>` header
+- **Cookie-based auth**: Tokens are in HTTP-only cookies, not Authorization header
+- Ensure frontend sends `withCredentials: true` in API requests
 - Check token hasn't expired (24 hours default)
 - Verify JWT_SECRET matches between deployments
+- Check CORS allows credentials from your frontend origin
 
 ### Database schema issues
 

@@ -9,6 +9,9 @@ import com.bitedash.shared.annotation.RequireRole;
 import com.bitedash.shared.dto.ApiResponse;
 import com.bitedash.shared.enums.Role;
 import com.bitedash.shared.util.UserContext;
+
+import jakarta.validation.Valid;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,7 +60,7 @@ public class OrderController {
 	}
 
 	@PostMapping
-	public ResponseEntity<ApiResponse> createOrder(@RequestBody OrderRequest request) {
+	public ResponseEntity<ApiResponse> createOrder(@Valid @RequestBody OrderRequest request) {
 		try {
 			log.info("Creating order for vendor: {}", request.getVendorId());
 

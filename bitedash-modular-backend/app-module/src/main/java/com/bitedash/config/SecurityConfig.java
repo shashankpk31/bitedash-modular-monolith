@@ -4,6 +4,7 @@ import com.bitedash.shared.security.JwtAuthenticationFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -17,6 +18,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -33,6 +35,9 @@ import java.util.Map;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @Value("${spring.profiles.active:dev}")
+    private String activeProfile;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -72,6 +77,10 @@ public class SecurityConfig {
 
                         // Public endpoints
                         .requestMatchers("/auth/**").permitAll()
+                        // Payment webhook (called by Razorpay, not users)
+                        .requestMatchers("/payment/webhook").permitAll()
+                        // Payment config (public key for frontend)
+                        .requestMatchers("/payment/config").permitAll()
                         // Public organization endpoint for registration (supports both spellings)
                         .requestMatchers("/organization/public", "/organisation/public").permitAll()
                         // WebSocket endpoints - must be public for handshake
@@ -79,10 +88,14 @@ public class SecurityConfig {
                         // SockJS fallback endpoints
                         .requestMatchers("/ws/info", "/ws/*/xhr_streaming/**", "/ws/*/xhr_send/**", "/ws/*/xhr/**")
                         .permitAll()
-                        // WARNING: In production, restrict /actuator/** and /swagger-ui/**
-                        // to admin users only or disable completely for security
-                        .requestMatchers("/actuator/**").permitAll()
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        // Health check endpoint - always public for load balancers
+                        .requestMatchers("/actuator/health").permitAll()
+                        // Keep-alive endpoints for Render free tier (prevent sleep after 15 min)
+                        .requestMatchers("/api/keep-alive", "/api/ping").permitAll()
+                        // Other actuator endpoints - admin only in production
+                        .requestMatchers("/actuator/**").hasRole("SUPER_ADMIN")
+                        // Swagger - only in dev/test, admin only in prod
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").hasRole("SUPER_ADMIN")
                         .requestMatchers("/api/public/**").permitAll()
                         .requestMatchers("/error").permitAll()
 
@@ -119,6 +132,24 @@ public class SecurityConfig {
                             response.getWriter().write(mapper.writeValueAsString(errorResponse));
                         }))
 
+                // Security headers
+                .headers(headers -> headers
+                        // Prevent clickjacking
+                        .frameOptions(frame -> frame.deny())
+                        // Prevent MIME type sniffing
+                        .contentTypeOptions(content -> {})
+                        // XSS protection (legacy browsers)
+                        .xssProtection(xss -> xss.headerValue(
+                                org.springframework.security.web.header.writers.XXssProtectionHeaderWriter.HeaderValue.ENABLED_MODE_BLOCK))
+                        // Referrer policy
+                        .referrerPolicy(referrer -> referrer.policy(
+                                ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+                        // Content Security Policy
+                        .contentSecurityPolicy(csp -> csp.policyDirectives(
+                                "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
+                                "style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; " +
+                                "font-src 'self' data:; connect-src 'self' ws: wss:;")))
+
                 // JWT authentication filter
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
 
@@ -138,15 +169,15 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Allow localhost (dev) and cloud deployments (AWS, Railway)
-        // Note: When frontend is served from same backend, CORS is not triggered
+        // Allow specific origins for security
+        // Dev: specific localhost ports, Prod: cloud deployments
         configuration.setAllowedOriginPatterns(List.of(
-                "http://localhost:*",
+                "http://localhost:5173",    // Vite dev server
+                "http://localhost:3000",    // Alternative dev server
+                "http://localhost:8089",    // Same-origin (backend serves frontend)
                 "https://*.railway.app",
-                "http://*.compute.amazonaws.com:*",
-                "https://*.compute.amazonaws.com:*",
-                "http://*.elb.amazonaws.com:*",
-                "https://*.elb.amazonaws.com:*"));
+                "https://*.compute.amazonaws.com",
+                "https://*.elb.amazonaws.com"));
 
         // Allow common HTTP methods
         configuration.setAllowedMethods(Arrays.asList(
@@ -155,10 +186,11 @@ public class SecurityConfig {
         // Allow all headers
         configuration.setAllowedHeaders(Arrays.asList("*"));
 
-        // Expose headers in response
+        // Expose headers in response (include Set-Cookie for auth)
         configuration.setExposedHeaders(Arrays.asList(
                 "Authorization",
-                "Content-Type"));
+                "Content-Type",
+                "Set-Cookie"));
 
         // Allow credentials (cookies, authorization headers)
         configuration.setAllowCredentials(true);

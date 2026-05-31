@@ -7,12 +7,13 @@ spring:
     name: bitedash-app
 
   datasource:
-    # DATABASE_URL format: jdbc:postgresql://host:port/database
-    # Set via environment variables by deployment script
-    url: ${DATABASE_URL}
-    username: ${DATABASE_USERNAME}
-    password: ${DATABASE_PASSWORD}
-    driver-class-name: org.postgresql.Driver
+    # H2 In-Memory Database for Render Free Tier
+    # Why H2? Free tier, no external database cost, auto-populated with sample data on boot
+    # Data is reset on restart (perfect for demos and recruiter testing)
+    url: jdbc:h2:mem:bitedash;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
     hikari:
       maximum-pool-size: 10
       minimum-idle: 2
@@ -20,29 +21,36 @@ spring:
       idle-timeout: 600000
       max-lifetime: 1800000
 
+  h2:
+    console:
+      enabled: true  # Enable H2 console for debugging: /h2-console
+      path: /h2-console
+      settings:
+        web-allow-others: true
+
   jpa:
     hibernate:
-      ddl-auto: validate  # IMPORTANT: validate only in production
+      ddl-auto: create-drop  # Recreate schema on startup, populate with sample data
     show-sql: false
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+        dialect: org.hibernate.dialect.H2Dialect
         format_sql: false
         use_sql_comments: false
-        default_schema: public
     open-in-view: false
 
   security:
     filter:
       order: -100
 
-  # Redis Configuration
-  # Set REDIS_HOST, REDIS_PORT, and REDIS_PASSWORD as environment variables
+  # Redis Configuration (OPTIONAL - for OTP caching)
+  # If not configured, OTP will be stored in-memory (resets on restart)
+  # For production with persistence, set REDIS_HOST, REDIS_PORT, REDIS_PASSWORD
   data:
     redis:
-      host: ${REDIS_HOST}
+      host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD}
+      password: ${REDIS_PASSWORD:}
       timeout: 60000ms
       lettuce:
         pool:
@@ -75,8 +83,10 @@ spring:
         queue-capacity: 100
 
   # Web MVC - Static Resources (Frontend)
+  # Re-enable static resource handling for production (disabled in dev)
   web:
     resources:
+      add-mappings: true  # Enable static resource handling in prod
       static-locations: classpath:/static/
       cache:
         cachecontrol:

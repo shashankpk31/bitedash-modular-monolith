@@ -62,7 +62,8 @@ public class WalletService {
 			throw new RuntimeException("Credit amount must be positive");
 		}
 
-		UserWallet wallet = userWalletRepository.findByUserIdAndDeletedFalse(userId)
+		// Use pessimistic lock to prevent race conditions
+		UserWallet wallet = userWalletRepository.findByUserIdForUpdate(userId)
 			.orElseThrow(() -> new RuntimeException("Wallet not found for user: " + userId));
 
 		BigDecimal balanceBefore = wallet.getBalance();
@@ -93,11 +94,17 @@ public class WalletService {
 											Long referenceId, String referenceType) {
 		log.info("Debiting wallet for user: {}, amount: {}", userId, amount);
 
+		// WHY validate positive amount? Prevents accounting errors and potential
+		// balance manipulation where negative debits would add money.
 		if (amount.compareTo(BigDecimal.ZERO) <= 0) {
 			throw new RuntimeException("Debit amount must be positive");
 		}
 
-		UserWallet wallet = userWalletRepository.findByUserIdAndDeletedFalse(userId)
+		// WHY pessimistic lock (SELECT ... FOR UPDATE)? Prevents the double-spend problem
+		// where concurrent transactions could both read the same balance, both verify
+		// sufficient funds, and both deduct - resulting in negative balance. The lock
+		// is held until transaction commits, ensuring atomic read-modify-write semantics.
+		UserWallet wallet = userWalletRepository.findByUserIdForUpdate(userId)
 			.orElseThrow(() -> new RuntimeException("Wallet not found for user: " + userId));
 
 		BigDecimal balanceBefore = wallet.getBalance();
@@ -190,6 +197,15 @@ public class WalletService {
 
 		Double total = transactionRepository.getTotalDebitsByWallet(wallet.getId());
 		return total != null ? BigDecimal.valueOf(total) : BigDecimal.ZERO;
+	}
+
+	/**
+	 * Convenience method to credit wallet from payment integration.
+	 * Used by PaymentController for wallet top-up via Razorpay.
+	 */
+	@Transactional
+	public WalletTransactionResponse creditWallet(Long userId, BigDecimal amount, String description) {
+		return credit(userId, amount, description, null, "PAYMENT");
 	}
 
 	private UserWalletResponse toWalletResponse(UserWallet wallet) {

@@ -23,8 +23,13 @@ export const AUTH_CONST = {
   USER: LOCL_STRG_KEY.USER,
 };
 
-// API base URL from environment
-export const API_BASE_URL = import.meta.env.API_BASE_URL || 'http://localhost:8089';
+// API base URL from environment (VITE_ prefix required for Vite)
+// WHY: In production (bundled), use empty string for relative URLs (same origin)
+//      In development, use localhost:8089 if VITE_API_BASE_URL not set
+// LOGIC: If explicitly set to empty string in .env, use it (production bundled)
+//        Otherwise use localhost for development
+const envApiUrl = import.meta.env.VITE_API_BASE_URL;
+export const API_BASE_URL = envApiUrl !== undefined ? envApiUrl : 'http://localhost:8089';
 
 // API path prefixes
 export const API_PATHS = {

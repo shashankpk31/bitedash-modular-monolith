@@ -51,6 +51,20 @@ public class VendorController {
 	@GetMapping("/{vendorId}/stats")
 	@RequireRole({Role.ROLE_VENDOR, Role.ROLE_SUPER_ADMIN, Role.ROLE_ORG_ADMIN})
 	public ResponseEntity<ApiResponse> getVendorStats(@PathVariable Long vendorId) {
+		// SECURITY: Verify vendor ownership for non-admin users
+		var context = UserContext.get();
+		String role = context.role();
+
+		boolean isAdmin = "ROLE_SUPER_ADMIN".equals(role) || "ROLE_ORG_ADMIN".equals(role);
+		if (!isAdmin) {
+			// Vendors can only access their own stats
+			var myVendor = vendorService.getVendorByOwnerUserId(context.userId());
+			if (myVendor == null || !myVendor.getId().equals(vendorId)) {
+				return ResponseEntity.status(HttpStatus.FORBIDDEN)
+					.body(new ApiResponse(false, "You can only access your own vendor stats", null));
+			}
+		}
+
 		return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse(true, "Vendor stats fetched successfully",
 				vendorService.getVendorStats(vendorId)));
 	}

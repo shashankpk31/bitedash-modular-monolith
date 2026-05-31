@@ -9,6 +9,7 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
   timeout: 30000, // 30 seconds - prevents hanging requests
+  withCredentials: true, // SECURITY: Send HTTP-only cookies automatically
 });
 
 // Flag to prevent multiple refresh attempts simultaneously
@@ -28,16 +29,12 @@ const processQueue = (error, token = null) => {
   failedQueue = [];
 };
 
-// REQUEST INTERCEPTOR - Attach JWT token to all requests
+// REQUEST INTERCEPTOR - JWT tokens are now in HTTP-only cookies (sent automatically)
+// No manual token attachment needed - withCredentials: true handles this
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem(LOCL_STRG_KEY.TOKEN);
-
-    // Attach token if available (except for public endpoints)
-    if (token && !config.headers.Authorization) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-
+    // Cookies are sent automatically with withCredentials: true
+    // No manual Authorization header needed for cookie-based auth
     return config;
   },
   (error) => {
@@ -87,73 +84,47 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
 
-      const refreshToken = localStorage.getItem(LOCL_STRG_KEY.REFRESH_TOKEN);
+      // Try to refresh the token using HTTP-only cookie (sent automatically)
+      try {
+        const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {}, {
+          withCredentials: true, // Send refresh token cookie
+        });
 
-      // Try to refresh the token
-      if (refreshToken) {
-        try {
-          const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
-            refreshToken,
-          });
+        // New tokens are set in HTTP-only cookies by the server
+        // No localStorage update needed
 
-          const { token: newToken, refreshToken: newRefreshToken } = response.data;
+        // Process queued requests
+        processQueue(null, 'refreshed');
 
-          // Update stored tokens
-          localStorage.setItem(LOCL_STRG_KEY.TOKEN, newToken);
-          if (newRefreshToken) {
-            localStorage.setItem(LOCL_STRG_KEY.REFRESH_TOKEN, newRefreshToken);
-          }
+        isRefreshing = false;
 
-          // Update default header
-          api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
-          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        // Retry original request (cookies updated automatically)
+        return api(originalRequest);
+      } catch (refreshError) {
+        // Refresh failed - clear auth and redirect to login
+        processQueue(refreshError, null);
+        isRefreshing = false;
 
-          // Process queued requests
-          processQueue(null, newToken);
+        // Only show error if user was logged in (had user data)
+        const hadUser = localStorage.getItem(LOCL_STRG_KEY.USER);
 
-          isRefreshing = false;
-
-          // Retry original request with new token
-          return api(originalRequest);
-        } catch (refreshError) {
-          // Refresh failed - clear auth and redirect to login
-          processQueue(refreshError, null);
-          isRefreshing = false;
-
-          toast.error('Session expired. Please login again.', {
-            duration: TOAST_DURATION.ERROR,
-          });
-
-          // Clear authentication data
-          localStorage.removeItem(LOCL_STRG_KEY.TOKEN);
-          localStorage.removeItem(LOCL_STRG_KEY.REFRESH_TOKEN);
-          localStorage.removeItem(LOCL_STRG_KEY.USER);
-
-          // Redirect to login (only if not already there)
-          if (!window.location.pathname.includes('/login')) {
-            window.location.href = '/login';
-          }
-
-          return Promise.reject(refreshError);
-        }
-      } else {
-        // No refresh token available
-        // Only show error if user was authenticated before (had a token)
-        const hadToken = localStorage.getItem(LOCL_STRG_KEY.TOKEN);
-
-        if (hadToken) {
+        if (hadUser) {
           toast.error('Session expired. Please login again.', {
             duration: TOAST_DURATION.ERROR,
           });
         }
 
-        localStorage.clear();
+        // Clear user data from localStorage (tokens are in cookies, cleared by server)
+        localStorage.removeItem(LOCL_STRG_KEY.USER);
+        localStorage.removeItem(LOCL_STRG_KEY.CART);
+        localStorage.removeItem(LOCL_STRG_KEY.LOCATION);
+
+        // Redirect to login (only if not already there)
         if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/register')) {
           window.location.href = '/login';
         }
 
-        isRefreshing = false;
-        return Promise.reject(new Error('No refresh token'));
+        return Promise.reject(refreshError);
       }
     }
 

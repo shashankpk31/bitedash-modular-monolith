@@ -55,8 +55,8 @@ export const useVerifyAccount = () => {
   return useMutation({
     mutationFn: ({ identifier, otp }) => verifyAccount(identifier, otp),
     onSuccess: (data) => {
-      // Save auth details to context
-      saveLoginDetails(data.user, data.token, data.refreshToken);
+      // Save user data to context (tokens are now in HTTP-only cookies)
+      saveLoginDetails(data.user);
 
       toast.success('Account verified successfully!', {
         duration: TOAST_DURATION.SUCCESS,
@@ -109,10 +109,10 @@ export const useLogin = () => {
   return useMutation({
     mutationFn: ({ userIdentifier, password }) => loginUser(userIdentifier, password),
     onSuccess: (data) => {
-      // Save auth details
-      saveLoginDetails(data.user, data.token, data.refreshToken);
+      // Save user data (tokens are now in HTTP-only cookies set by server)
+      saveLoginDetails(data.user);
 
-      toast.success(`Welcome back, ${data.user.name}!`, {
+      toast.success(`Welcome back, ${data.user.fullName}!`, {
         duration: TOAST_DURATION.SUCCESS,
       });
 

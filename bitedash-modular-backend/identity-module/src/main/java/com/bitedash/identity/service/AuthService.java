@@ -173,11 +173,14 @@ public class AuthService {
     }
 
     public boolean verifyIdentifier(String identifier, String otp) {
-        // Check rate limiting (max 5 attempts per 15 minutes)
+        // WHY rate limiting? OTP brute-force prevention. A 6-digit OTP has 1,000,000 possible
+        // combinations. With 5 attempts per 15 minutes, an attacker would need ~3 years to
+        // exhaust all combinations, making brute-force impractical. The 15-minute lockout
+        // provides user feedback without permanently blocking legitimate users who mistype.
         String attemptsKey = "OTP_ATTEMPTS:" + identifier;
         String lockedKey = "OTP_LOCKED:" + identifier;
 
-        // Check if account is locked
+        // Check if account is locked due to too many failed attempts
         String locked = redisTemplate.opsForValue().get(lockedKey);
         if (locked != null) {
             throw new RuntimeException("Too many failed attempts. Please try again in 15 minutes.");

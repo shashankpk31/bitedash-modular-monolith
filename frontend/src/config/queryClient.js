@@ -15,7 +15,8 @@ export const queryClient = new QueryClient({
 
       // How long inactive data stays in cache (10 minutes)
       // Why? Keeps recently viewed data accessible without re-fetching
-      cacheTime: 1000 * 60 * 10,
+      // Note: Renamed from cacheTime to gcTime in TanStack Query v5
+      gcTime: 1000 * 60 * 10,
 
       // Retry failed requests 1 time before giving up
       // Why? Network hiccups are common, but we don't want to spam failed requests

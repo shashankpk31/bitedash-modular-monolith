@@ -138,6 +138,7 @@ public class InventoryController {
 	}
 
 	@GetMapping("/cafeteria/{cafeteriaId}/needs-reorder")
+	@RequireRole({Role.ROLE_ORG_ADMIN, Role.ROLE_VENDOR})
 	public ResponseEntity<ApiResponse> getItemsNeedingReorder(@PathVariable Long cafeteriaId) {
 		try {
 			log.info("Fetching items needing reorder for cafeteria: {}", cafeteriaId);

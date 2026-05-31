@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Wallet, ArrowDownCircle, ArrowUpCircle, History, RefreshCw } from 'lucide-react';
+import { Wallet, ArrowDownCircle, ArrowUpCircle, History, RefreshCw, Plus } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Button from '../../../common/components/Button';
 import Badge from '../../../common/components/Badge';
 import { ContentLoader } from '../../../common/components/Spinner';
+import TopUpModal from '../components/TopUpModal';
 import {
   useMyWallet,
   useWalletTransactions,
@@ -16,6 +17,7 @@ import { formatCurrency, formatDateTime, formatRelativeTime } from '../../../com
 // Why? Employees need to track their meal credits and spending
 const WalletPage = () => {
   const [transactionFilter, setTransactionFilter] = useState('all');
+  const [showTopUpModal, setShowTopUpModal] = useState(false);
 
   // Fetch wallet data
   const { data: wallet, isLoading: walletLoading, refetch: refetchWallet } = useMyWallet();
@@ -43,12 +45,22 @@ const WalletPage = () => {
               Track your balance and transactions
             </p>
           </div>
-          <button
-            onClick={() => refetchWallet()}
-            className="p-2 rounded-lg hover:bg-surface-container transition-colors"
-          >
-            <RefreshCw size={20} className="text-on-surface-variant" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => refetchWallet()}
+              className="p-2 rounded-lg hover:bg-surface-container transition-colors"
+            >
+              <RefreshCw size={20} className="text-on-surface-variant" />
+            </button>
+            <Button
+              variant="filled"
+              size="sm"
+              onClick={() => setShowTopUpModal(true)}
+            >
+              <Plus size={18} className="mr-1" />
+              Top Up
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -212,6 +224,16 @@ const WalletPage = () => {
           </div>
         )}
       </div>
+
+      {/* Top Up Modal */}
+      <TopUpModal
+        isOpen={showTopUpModal}
+        onClose={() => setShowTopUpModal(false)}
+        onSuccess={(amount) => {
+          // Refresh wallet data after successful top-up
+          refetchWallet();
+        }}
+      />
     </div>
   );
 };

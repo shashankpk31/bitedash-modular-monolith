@@ -2,96 +2,202 @@
 # BiteDash Project - .gitignore
 # ==========================================
 
-# Node modules
+# ==========================================
+# Node.js / Frontend
+# ==========================================
 node_modules/
-frontend/node_modules/
 **/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
 
 # Build outputs
 frontend/dist/
 frontend/build/
-bitedash-modular-backend/target/
-bitedash-modular-backend/*/target/
-*.jar
-*.war
-
-# Static folder - NOW COMMITTED for Railway deployment
-# bitedash-modular-backend/app-module/src/main/resources/static/
-
-# Logs
-*.log
-logs/
-stitch/
-qwen.sh
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Environment files - NEVER COMMIT THESE!
-.env
-.env.local
-.env.production
-frontend/.env
-frontend/.env.local
-frontend/.env.production
-
-# IDE settings
-.idea/
-.vscode/
-*.iml
-*.iws
-*.ipr
-.classpath
-.project
-.settings/
-.DS_Store
-Thumbs.db
-
-# Temporary files
-*.tmp
-*.bak
-*.swp
-*~
-.cache/
+.vite/
 
 # Test coverage
 coverage/
+frontend/coverage/
 .nyc_output/
-htmlcov/
 
-# Database files (local development only)
-*.db
-*.sqlite
-
-# Maven wrapper (optional - you can commit mvnw if you want)
-.mvn/
-mvnw
-mvnw.cmd
-
-# OS files
-.DS_Store
-Thumbs.db
-desktop.ini
-
-# Compiled class files
+# ==========================================
+# Java / Maven / Spring Boot
+# ==========================================
+target/
+**/target/
 *.class
-
-# Package files
-*.nar
+*.jar
+*.war
 *.ear
-*.zip
-*.tar.gz
-*.rar
+*.nar
+
+# Maven wrapper - KEEP these for CI/CD builds
+# .mvn/
+# mvnw
+# mvnw.cmd
 
 # Spring Boot
 spring.log
+*.log.*.gz
 
-# Error and debug files
-error.txt
+# H2 Database files
+*.db
+*.mv.db
+*.trace.db
+data/
+
+# Razorpay Simulator data
+razorpay-simulator/data/
+
+# ==========================================
+# Environment & Secrets - NEVER COMMIT!
+# ==========================================
+.env
+.env.*
+!.env.example
+*.env
+**/.env
+**/.env.*
+!**/.env.example
+
+# Credentials
+credentials.json
+*.pem
+*.key
+*.crt
+secrets/
+
+# ==========================================
+# IDE & Editor Settings
+# ==========================================
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Eclipse / STS
+.classpath
+.project
+.settings/
+.metadata/
+bin/
+.factorypath
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# NetBeans
+nbproject/
+nbbuild/
+nbdist/
+.nb-gradle/
+
+# ==========================================
+# Operating System Files
+# ==========================================
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# ==========================================
+# Temporary Files
+# ==========================================
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~
+.cache/
+.temp/
+tmp/
+
+# ==========================================
+# Test & Debug
+# ==========================================
+# Test reports
+**/surefire-reports/
+**/failsafe-reports/
+test-results/
+junit*.xml
+
+# Debug files
 debug.log
+error.txt
+*.stacktrace
+
+# ==========================================
+# Deployment & Build
+# ==========================================
+# Docker
+.docker/
+
+# Local deployment scripts with secrets
+deploy-local.sh
+*.local.sh
+
+# Build artifacts
+build/
+out/
+dist/
+
+# ==========================================
+# Project-Specific Ignores
+# ==========================================
+# Claude AI working files - NEVER COMMIT
+.claude/
+.claude-plugin/
+settings.local.json
+*.jsonl
 CLAUDE.md
+**/CLAUDE.md
+
+# Ignore experimental/scratch folders
 ignore/
+scratch/
 health_doc/
-.metadata
-*.md
-last-session
+stitch/
+razorpay-simulator/
+
+# Local scripts with credentials
+bite-env.sh
+aws.sh
+qwen.sh
+*.sh
+
+# Package lock (optional - some teams commit this)
+# package-lock.json
+
+# ==========================================
+# Files to KEEP (override ignores)
+# ==========================================
+# Keep important documentation
+!README.md
+!DEPLOYMENT.md
+!RENDER_DEPLOYMENT.md
+!QUICK_DEPLOY.md
+!PROJECT_STATUS.md
+!RUNNING_IN_IDE.md
+!**/README.md
+
+# Keep example env files
+!.env.example
+!**/.env.example
+
+# Keep render.yaml for deployment
+!render.yaml
+
+# Keep Dockerfiles
+!Dockerfile
+!**/Dockerfile
+!docker-compose*.yml

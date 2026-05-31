@@ -22,6 +22,18 @@
         </dependency>
 
         <dependency>
+            <groupId>com.bitedash</groupId>
+            <artifactId>wallet-module</artifactId>
+        </dependency>
+
+        <!-- Apache Commons Codec for HMAC-SHA256 signature verification -->
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>1.16.0</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>

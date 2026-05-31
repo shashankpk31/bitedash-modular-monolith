@@ -23,8 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.security.SecureRandom;
 import java.util.List;
-import java.util.Random;
 
 @Service
 public class OrderService {
@@ -72,7 +72,9 @@ public class OrderService {
 
 		log.info("All menu items are available");
 
-		// Validate total amount - recalculate from items to prevent frontend manipulation
+		// WHY server-side price recalculation? Critical security measure against price
+		// manipulation attacks where a malicious client modifies totalAmount before submission.
+		// We trust only item quantities from frontend and recalculate using verified menu prices.
 		BigDecimal calculatedTotal = BigDecimal.ZERO;
 		if (request.getItems() != null && !request.getItems().isEmpty()) {
 			for (var item : request.getItems()) {
@@ -83,7 +85,9 @@ public class OrderService {
 			}
 		}
 
-		// Allow a small tolerance for rounding differences (0.01)
+		// WHY 0.01 tolerance? Accommodates floating-point rounding differences between
+		// JavaScript (IEEE 754) and Java BigDecimal arithmetic. This is NOT for price
+		// discounts - any actual price manipulation will exceed this tolerance.
 		BigDecimal difference = request.getTotalAmount().subtract(calculatedTotal).abs();
 		if (difference.compareTo(new BigDecimal("0.01")) > 0) {
 			log.error("Total amount mismatch for order. Frontend sent: {}, Backend calculated: {}",
@@ -103,6 +107,10 @@ public class OrderService {
 		String orderNumber = generateUniqueOrderNumber();
 		order.setOrderNumber(orderNumber);
 
+		// WHY commission-based revenue model? BiteDash takes a percentage of each order.
+		// Commission rate may vary by vendor agreement (stored in order entity).
+		// Platform commission calculated first, then vendor payout is remainder -
+		// ensuring we never overpay due to rounding. HALF_UP is standard financial rounding.
 		BigDecimal totalAmount = request.getTotalAmount();
 		BigDecimal commissionRate = order.getCommissionRate();
 		BigDecimal platformCommission = totalAmount.multiply(commissionRate).setScale(2, RoundingMode.HALF_UP);
@@ -292,7 +300,7 @@ public class OrderService {
 	}
 
 	private String generateOTP() {
-		return String.format("%06d", new Random().nextInt(1000000));
+		return String.format("%06d", new SecureRandom().nextInt(1000000));
 	}
 
 	private void addStatusHistory(Order order, String previousStatus, String newStatus, Long changedBy,

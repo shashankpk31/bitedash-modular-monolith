@@ -99,3 +99,44 @@ export const initializeWallet = async (userId) => {
   const response = await api.post(`${API_PATHS.WALLET}/init/${userId}`);
   return response;
 };
+
+// ========== Payment/Top-up API ==========
+
+/**
+ * Get payment configuration (Razorpay key ID)
+ * @returns {Promise} Payment config with keyId
+ */
+export const getPaymentConfig = async () => {
+  const response = await api.get('/payment/config');
+  return response;
+};
+
+/**
+ * Create payment order for wallet top-up
+ * @param {Object} orderData - Order details (amount, description)
+ * @returns {Promise} Payment order with checkout URL
+ */
+export const createPaymentOrder = async (orderData) => {
+  const response = await api.post('/payment/create-order', orderData);
+  return response;
+};
+
+/**
+ * Verify payment after Razorpay checkout
+ * @param {Object} paymentData - Payment verification data
+ * @returns {Promise} Verification result
+ */
+export const verifyPayment = async (paymentData) => {
+  const response = await api.post('/payment/verify', paymentData);
+  return response;
+};
+
+/**
+ * Get payment status
+ * @param {string} orderId - Razorpay order ID
+ * @returns {Promise} Payment status
+ */
+export const getPaymentStatus = async (orderId) => {
+  const response = await api.get(`/payment/status/${orderId}`);
+  return response;
+};

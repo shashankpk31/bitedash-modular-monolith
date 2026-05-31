@@ -86,7 +86,7 @@ public class OrganizationController {
 
 	@GetMapping("/{id}")
 	public ResponseEntity<ApiResponse> getOrganizationById(@PathVariable Long id) {
-		return ResponseEntity.status(HttpStatus.CREATED).body(
+		return ResponseEntity.status(HttpStatus.OK).body(
 				new ApiResponse(true, Message.ORG_FETCHED.getMessage(), organizationService.findOrganizationById(id)));
 	}
 

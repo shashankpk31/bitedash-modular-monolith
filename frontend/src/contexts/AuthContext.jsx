@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, useMemo, useCallback } 
 import PropTypes from 'prop-types';
 import api from '../api/axiosInstance';
 import { LOCL_STRG_KEY, getRoleBasedPath } from '../config/constants';
-import { getStoredUser, getStoredToken } from '../common/utils';
+import { getStoredUser } from '../common/utils';
 
 // Why use Context? Provides authentication state globally without prop drilling
 const AuthContext = createContext(null);
@@ -12,30 +12,29 @@ export const AuthProvider = ({ children }) => {
   const [isInitializing, setIsInitializing] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Initialize auth state from localStorage on mount
-  // Why? Restore user session after page refresh
+  // Initialize auth state on mount
+  // Why? Restore user session after page refresh (tokens are in HTTP-only cookies)
   useEffect(() => {
     const initializeAuth = async () => {
       try {
         const storedUser = getStoredUser();
-        const storedToken = getStoredToken();
 
-        if (storedUser && storedToken) {
-          // Validate token with backend to ensure it's still valid
-          // Why? Prevents using expired or revoked tokens
+        if (storedUser) {
+          // Validate session with backend - cookies sent automatically
+          // Why? Ensures HTTP-only cookie token is still valid
           try {
             await api.get('/auth/validate');
             setUser(storedUser);
           } catch (error) {
-            // Token invalid - clear storage
-            console.warn('Token validation failed:', error);
-            localStorage.clear();
+            // Session invalid - clear user data (cookies cleared by server on 401)
+            console.warn('Session validation failed:', error);
+            localStorage.removeItem(LOCL_STRG_KEY.USER);
             setUser(null);
           }
         }
       } catch (error) {
         console.error('Failed to initialize auth:', error);
-        localStorage.clear();
+        localStorage.removeItem(LOCL_STRG_KEY.USER);
         setUser(null);
       } finally {
         setIsInitializing(false);
@@ -47,22 +46,26 @@ export const AuthProvider = ({ children }) => {
 
   // Save login details after successful authentication
   // Why useCallback? Prevents function recreation on every render
-  const saveLoginDetails = useCallback((userData, token, refreshToken = null) => {
+  // Note: JWT tokens are now stored in HTTP-only cookies by the server
+  const saveLoginDetails = useCallback((userData) => {
+    // Only store user data for UI (tokens are in secure HTTP-only cookies)
     localStorage.setItem(LOCL_STRG_KEY.USER, JSON.stringify(userData));
-    localStorage.setItem(LOCL_STRG_KEY.TOKEN, token);
-    if (refreshToken) {
-      localStorage.setItem(LOCL_STRG_KEY.REFRESH_TOKEN, refreshToken);
-    }
     setUser(userData);
   }, []);
 
   // Logout user and clear all stored data
   // Why useCallback? Function reference stability for dependency arrays
-  const logout = useCallback(() => {
-    // Clear all local storage
+  const logout = useCallback(async () => {
+    try {
+      // Call logout endpoint to clear HTTP-only cookies on server
+      await api.post('/auth/logout');
+    } catch (error) {
+      // Logout even if server call fails
+      console.warn('Logout API call failed:', error);
+    }
+
+    // Clear local storage (user data only - tokens are in cookies)
     localStorage.removeItem(LOCL_STRG_KEY.USER);
-    localStorage.removeItem(LOCL_STRG_KEY.TOKEN);
-    localStorage.removeItem(LOCL_STRG_KEY.REFRESH_TOKEN);
     localStorage.removeItem(LOCL_STRG_KEY.CART);
     localStorage.removeItem(LOCL_STRG_KEY.LOCATION);
 

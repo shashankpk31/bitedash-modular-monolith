@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Plus, Edit, Trash2, Search, Utensils, Tag } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 import Button from '../../../common/components/Button';
 import Input from '../../../common/components/Input';
 import Select from '../../../common/components/Select';
@@ -12,7 +13,7 @@ import { useVendorMenu } from '../../../services/queries/menu.queries';
 import { createMenuItem, updateMenuItem, deleteMenuItem } from '../../../services/api/menu.api';
 import { useAuth } from '../../../contexts';
 import { formatCurrency } from '../../../common/utils';
-import { QUERY_KEYS } from '../../../config/constants';
+import { QUERY_KEYS, TOAST_DURATION } from '../../../config/constants';
 import { useVendorId } from '../hooks/useVendorId';
 
 // Menu Management Page - CRUD operations for menu items
@@ -44,7 +45,7 @@ const MenuManagementPage = () => {
     },
     onError: (error) => {
       console.error('Failed to create menu item:', error);
-      alert('Failed to create menu item. Please try again.');
+      toast.error('Failed to create menu item. Please try again.', { duration: TOAST_DURATION.ERROR });
     },
   });
 
@@ -57,7 +58,7 @@ const MenuManagementPage = () => {
     },
     onError: (error) => {
       console.error('Failed to update menu item:', error);
-      alert('Failed to update menu item. Please try again.');
+      toast.error('Failed to update menu item. Please try again.', { duration: TOAST_DURATION.ERROR });
     },
   });
 
@@ -70,15 +71,19 @@ const MenuManagementPage = () => {
     },
     onError: (error) => {
       console.error('Failed to delete menu item:', error);
-      alert('Failed to delete menu item. Please try again.');
+      toast.error('Failed to delete menu item. Please try again.', { duration: TOAST_DURATION.ERROR });
     },
   });
 
-  // Filter items by search
-  const filteredItems = menuItems?.filter(item =>
-    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.description?.toLowerCase().includes(searchQuery.toLowerCase())
-  ) || [];
+  // WHY useMemo? Prevents recalculating filtered items on every render.
+  // Only recalculates when menuItems or searchQuery changes.
+  const filteredItems = useMemo(() =>
+    menuItems?.filter(item =>
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    ) || [],
+    [menuItems, searchQuery]
+  );
 
   // Handle edit
   const handleEdit = (item) => {
