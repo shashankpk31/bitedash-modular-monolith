@@ -148,9 +148,6 @@ public class DatabaseInitializer implements CommandLineRunner {
         org.setName("TechCorp Inc.");
         // org.setRegisteredAddress - field does not exist
         // org.setGstin - field does not exist
-        org.setContactPerson("contact@techcorp.com");
-        org.setContactNumber("08012345678");
-        org.setIsActive(true);
         return organizationRepository.save(org);
     }
 
@@ -175,7 +172,6 @@ public class DatabaseInitializer implements CommandLineRunner {
         location.setCityName("Bangalore");
         location.setState("Karnataka");
         // location.setCountry - field does not exist
-        location.setIsActive(true);
         return locationRepository.save(location);
     }
 
@@ -193,7 +189,7 @@ public class DatabaseInitializer implements CommandLineRunner {
     private Cafeteria createCafeteria(Office office) {
         Cafeteria cafeteria = new Cafeteria();
         cafeteria.setOffice(office);
-        cafeteria.setCafeteriaName("Tech Park Food Court");
+        cafeteria.setName("Tech Park Food Court");
         cafeteria.setFloorNumber(1);
         cafeteria.setCapacity(200);
         cafeteria.setIsActive(true);
@@ -377,21 +373,18 @@ public class DatabaseInitializer implements CommandLineRunner {
         UserWallet johnWallet = new UserWallet();
         johnWallet.setUserId(employees.get(0).getId());
         johnWallet.setBalance(BigDecimal.valueOf(500.00));
-        johnWallet.setIsActive(true);
         userWalletRepository.save(johnWallet);
 
         // Jane Smith - ₹300
         UserWallet janeWallet = new UserWallet();
         janeWallet.setUserId(employees.get(1).getId());
         janeWallet.setBalance(BigDecimal.valueOf(300.00));
-        janeWallet.setIsActive(true);
         userWalletRepository.save(janeWallet);
 
         // Mike Johnson - ₹750
         UserWallet mikeWallet = new UserWallet();
         mikeWallet.setUserId(employees.get(2).getId());
         mikeWallet.setBalance(BigDecimal.valueOf(750.00));
-        mikeWallet.setIsActive(true);
         userWalletRepository.save(mikeWallet);
     }
 }
