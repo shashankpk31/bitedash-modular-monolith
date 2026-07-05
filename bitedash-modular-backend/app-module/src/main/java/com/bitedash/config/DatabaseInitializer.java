@@ -137,9 +137,9 @@ public class DatabaseInitializer implements CommandLineRunner {
         admin.setPassword(passwordEncoder.encode("Admin@123"));
         admin.setRole(Role.ROLE_SUPER_ADMIN);
         admin.setStatus(UserStatus.ACTIVE);
-        admin.setIsEmailVerified(true);
-        admin.setIsPhoneVerified(true);
-        admin.setIsProfileComplete(true);
+        admin.setEmailVerified(true);
+        admin.setPhoneVerified(true);
+        admin.setProfileComplete(true);
         return userRepository.save(admin);
     }
 
@@ -150,7 +150,7 @@ public class DatabaseInitializer implements CommandLineRunner {
         org.setGstin("29ABCDE1234F1Z5");
         org.setContactEmail("contact@techcorp.com");
         org.setContactPhone("08012345678");
-        org.setIsActive(true);
+        org.setActive(true);
         return organizationRepository.save(org);
     }
 
@@ -163,9 +163,9 @@ public class DatabaseInitializer implements CommandLineRunner {
         orgAdmin.setRole(Role.ROLE_ORG_ADMIN);
         orgAdmin.setOrganizationId(org.getId());
         orgAdmin.setStatus(UserStatus.ACTIVE);
-        orgAdmin.setIsEmailVerified(true);
-        orgAdmin.setIsPhoneVerified(true);
-        orgAdmin.setIsProfileComplete(true);
+        orgAdmin.setEmailVerified(true);
+        orgAdmin.setPhoneVerified(true);
+        orgAdmin.setProfileComplete(true);
         return userRepository.save(orgAdmin);
     }
 
@@ -175,7 +175,7 @@ public class DatabaseInitializer implements CommandLineRunner {
         location.setCityName("Bangalore");
         location.setState("Karnataka");
         location.setCountry("India");
-        location.setIsActive(true);
+        location.setActive(true);
         return locationRepository.save(location);
     }
 
@@ -196,7 +196,7 @@ public class DatabaseInitializer implements CommandLineRunner {
         cafeteria.setCafeteriaName("Tech Park Food Court");
         cafeteria.setFloorNumber(1);
         cafeteria.setCapacity(200);
-        cafeteria.setIsActive(true);
+        cafeteria.setActive(true);
         return cafeteriaRepository.save(cafeteria);
     }
 
@@ -213,9 +213,9 @@ public class DatabaseInitializer implements CommandLineRunner {
         vendorUser1.setShopName("Pizza Corner");
         vendorUser1.setGstNumber("29PIZZA1234F1Z5");
         vendorUser1.setStatus(UserStatus.ACTIVE);
-        vendorUser1.setIsEmailVerified(true);
-        vendorUser1.setIsPhoneVerified(true);
-        vendorUser1.setIsProfileComplete(true);
+        vendorUser1.setEmailVerified(true);
+        vendorUser1.setPhoneVerified(true);
+        vendorUser1.setProfileComplete(true);
         vendorUser1 = userRepository.save(vendorUser1);
 
         Vendor vendor1 = new Vendor();
@@ -224,7 +224,7 @@ public class DatabaseInitializer implements CommandLineRunner {
         vendor1.setContactEmail("vendor@pizzacorner.com");
         vendor1.setContactPhone("9876543212");
         vendor1.setLicenseNumber("LIC-PIZZA-2024");
-        vendor1.setIsActive(true);
+        vendor1.setActive(true);
         vendor1 = vendorRepository.save(vendor1);
         vendors.add(vendor1);
 
@@ -233,7 +233,7 @@ public class DatabaseInitializer implements CommandLineRunner {
         mapping1.setVendor(vendor1);
         mapping1.setCafeteria(cafeteria);
         mapping1.setStallNumber("S01");
-        mapping1.setIsActive(true);
+        mapping1.setActive(true);
         vendor1.getCafeteriaMappings().add(mapping1);
 
         // Vendor 2: South Indian Kitchen
@@ -246,9 +246,9 @@ public class DatabaseInitializer implements CommandLineRunner {
         vendorUser2.setShopName("South Indian Kitchen");
         vendorUser2.setGstNumber("29SOUTH1234F1Z5");
         vendorUser2.setStatus(UserStatus.ACTIVE);
-        vendorUser2.setIsEmailVerified(true);
-        vendorUser2.setIsPhoneVerified(true);
-        vendorUser2.setIsProfileComplete(true);
+        vendorUser2.setEmailVerified(true);
+        vendorUser2.setPhoneVerified(true);
+        vendorUser2.setProfileComplete(true);
         vendorUser2 = userRepository.save(vendorUser2);
 
         Vendor vendor2 = new Vendor();
@@ -257,7 +257,7 @@ public class DatabaseInitializer implements CommandLineRunner {
         vendor2.setContactEmail("vendor@southkitchen.com");
         vendor2.setContactPhone("9876543213");
         vendor2.setLicenseNumber("LIC-SOUTH-2024");
-        vendor2.setIsActive(true);
+        vendor2.setActive(true);
         vendor2 = vendorRepository.save(vendor2);
         vendors.add(vendor2);
 
@@ -265,7 +265,7 @@ public class DatabaseInitializer implements CommandLineRunner {
         mapping2.setVendor(vendor2);
         mapping2.setCafeteria(cafeteria);
         mapping2.setStallNumber("S02");
-        mapping2.setIsActive(true);
+        mapping2.setActive(true);
         vendor2.getCafeteriaMappings().add(mapping2);
 
         return vendors;
@@ -332,9 +332,9 @@ public class DatabaseInitializer implements CommandLineRunner {
         john.setOrganizationId(org.getId());
         john.setOfficeId(office.getId());
         john.setStatus(UserStatus.ACTIVE);
-        john.setIsEmailVerified(true);
-        john.setIsPhoneVerified(true);
-        john.setIsProfileComplete(true);
+        john.setEmailVerified(true);
+        john.setPhoneVerified(true);
+        john.setProfileComplete(true);
         employees.add(userRepository.save(john));
 
         // Employee 2: Jane Smith
@@ -348,9 +348,9 @@ public class DatabaseInitializer implements CommandLineRunner {
         jane.setOrganizationId(org.getId());
         jane.setOfficeId(office.getId());
         jane.setStatus(UserStatus.ACTIVE);
-        jane.setIsEmailVerified(true);
-        jane.setIsPhoneVerified(true);
-        jane.setIsProfileComplete(true);
+        jane.setEmailVerified(true);
+        jane.setPhoneVerified(true);
+        jane.setProfileComplete(true);
         employees.add(userRepository.save(jane));
 
         // Employee 3: Mike Johnson
@@ -364,9 +364,9 @@ public class DatabaseInitializer implements CommandLineRunner {
         mike.setOrganizationId(org.getId());
         mike.setOfficeId(office.getId());
         mike.setStatus(UserStatus.ACTIVE);
-        mike.setIsEmailVerified(true);
-        mike.setIsPhoneVerified(true);
-        mike.setIsProfileComplete(true);
+        mike.setEmailVerified(true);
+        mike.setPhoneVerified(true);
+        mike.setProfileComplete(true);
         employees.add(userRepository.save(mike));
 
         return employees;
@@ -377,21 +377,21 @@ public class DatabaseInitializer implements CommandLineRunner {
         UserWallet johnWallet = new UserWallet();
         johnWallet.setUserId(employees.get(0).getId());
         johnWallet.setBalance(BigDecimal.valueOf(500.00));
-        johnWallet.setIsActive(true);
+        johnWallet.setActive(true);
         userWalletRepository.save(johnWallet);
 
         // Jane Smith - ₹300
         UserWallet janeWallet = new UserWallet();
         janeWallet.setUserId(employees.get(1).getId());
         janeWallet.setBalance(BigDecimal.valueOf(300.00));
-        janeWallet.setIsActive(true);
+        janeWallet.setActive(true);
         userWalletRepository.save(janeWallet);
 
         // Mike Johnson - ₹750
         UserWallet mikeWallet = new UserWallet();
         mikeWallet.setUserId(employees.get(2).getId());
         mikeWallet.setBalance(BigDecimal.valueOf(750.00));
-        mikeWallet.setIsActive(true);
+        mikeWallet.setActive(true);
         userWalletRepository.save(mikeWallet);
     }
 }
