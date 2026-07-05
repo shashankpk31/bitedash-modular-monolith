@@ -98,7 +98,7 @@ public class DatabaseInitializer implements CommandLineRunner {
             Office office = createOffice(location);
             Cafeteria cafeteria = createCafeteria(office);
             log.info("✅ Location hierarchy created: {} → {} → {}",
-                     location.getCityName(), office.getOfficeName(), cafeteria.getCafeteriaName());
+                     location.getCityName(), office.getOfficeName(), cafeteria.getName());
 
             // 5. Create Vendors
             List<Vendor> vendors = createVendors(cafeteria);
@@ -146,11 +146,11 @@ public class DatabaseInitializer implements CommandLineRunner {
     private Organization createOrganization() {
         Organization org = new Organization();
         org.setName("TechCorp Inc.");
-        org.setRegisteredAddress("123 Tech Park, Bangalore, Karnataka 560001");
-        org.setGstin("29ABCDE1234F1Z5");
-        org.setContactEmail("contact@techcorp.com");
-        org.setContactPhone("08012345678");
-        org.setActive(true);
+        // org.setRegisteredAddress - field does not exist
+        // org.setGstin - field does not exist
+        org.setContactPerson("contact@techcorp.com");
+        org.setContactNumber("08012345678");
+        org.setIsActive(true);
         return organizationRepository.save(org);
     }
 
@@ -174,8 +174,8 @@ public class DatabaseInitializer implements CommandLineRunner {
         location.setOrganization(org);
         location.setCityName("Bangalore");
         location.setState("Karnataka");
-        location.setCountry("India");
-        location.setActive(true);
+        // location.setCountry - field does not exist
+        location.setIsActive(true);
         return locationRepository.save(location);
     }
 
@@ -184,9 +184,9 @@ public class DatabaseInitializer implements CommandLineRunner {
         office.setLocation(location);
         office.setOfficeName("Tech Park HQ");
         office.setAddress("Tower A, 5th Floor, Tech Park, Whitefield");
-        office.setCity("Bangalore");
-        office.setState("Karnataka");
-        office.setPincode("560066");
+        // office.setCity - field does not exist
+        // office.setState - field does not exist
+        // office.setPincode - field does not exist
         return officeRepository.save(office);
     }
 
@@ -196,7 +196,7 @@ public class DatabaseInitializer implements CommandLineRunner {
         cafeteria.setCafeteriaName("Tech Park Food Court");
         cafeteria.setFloorNumber(1);
         cafeteria.setCapacity(200);
-        cafeteria.setActive(true);
+        cafeteria.setIsActive(true);
         return cafeteriaRepository.save(cafeteria);
     }
 
@@ -220,11 +220,11 @@ public class DatabaseInitializer implements CommandLineRunner {
 
         Vendor vendor1 = new Vendor();
         vendor1.setOwnerUserId(vendorUser1.getId());
-        vendor1.setVendorName("Pizza Corner");
-        vendor1.setContactEmail("vendor@pizzacorner.com");
-        vendor1.setContactPhone("9876543212");
-        vendor1.setLicenseNumber("LIC-PIZZA-2024");
-        vendor1.setActive(true);
+        vendor1.setName("Pizza Corner");
+        vendor1.setContactPerson("vendor@pizzacorner.com");
+        vendor1.setContactNumber("9876543212");
+        // vendor1.setLicenseNumber - field does not exist
+        vendor1.setIsActive(true);
         vendor1 = vendorRepository.save(vendor1);
         vendors.add(vendor1);
 
@@ -233,7 +233,7 @@ public class DatabaseInitializer implements CommandLineRunner {
         mapping1.setVendor(vendor1);
         mapping1.setCafeteria(cafeteria);
         mapping1.setStallNumber("S01");
-        mapping1.setActive(true);
+        mapping1.setIsActive(true);
         vendor1.getCafeteriaMappings().add(mapping1);
 
         // Vendor 2: South Indian Kitchen
@@ -253,11 +253,11 @@ public class DatabaseInitializer implements CommandLineRunner {
 
         Vendor vendor2 = new Vendor();
         vendor2.setOwnerUserId(vendorUser2.getId());
-        vendor2.setVendorName("South Indian Kitchen");
-        vendor2.setContactEmail("vendor@southkitchen.com");
-        vendor2.setContactPhone("9876543213");
-        vendor2.setLicenseNumber("LIC-SOUTH-2024");
-        vendor2.setActive(true);
+        vendor2.setName("South Indian Kitchen");
+        vendor2.setContactPerson("vendor@southkitchen.com");
+        vendor2.setContactNumber("9876543213");
+        // vendor2.setLicenseNumber - field does not exist
+        vendor2.setIsActive(true);
         vendor2 = vendorRepository.save(vendor2);
         vendors.add(vendor2);
 
@@ -265,7 +265,7 @@ public class DatabaseInitializer implements CommandLineRunner {
         mapping2.setVendor(vendor2);
         mapping2.setCafeteria(cafeteria);
         mapping2.setStallNumber("S02");
-        mapping2.setActive(true);
+        mapping2.setIsActive(true);
         vendor2.getCafeteriaMappings().add(mapping2);
 
         return vendors;
@@ -301,14 +301,14 @@ public class DatabaseInitializer implements CommandLineRunner {
 
     private Category createCategory(String name, Vendor vendor) {
         Category category = new Category();
-        category.setCategoryName(name);
+        category.setName(name);
         category.setVendorId(vendor.getId());
         return categoryRepository.save(category);
     }
 
     private MenuItem createMenuItem(String name, String description, double price, Category category, Vendor vendor) {
         MenuItem item = new MenuItem();
-        item.setItemName(name);
+        item.setName(name);
         item.setDescription(description);
         item.setPrice(BigDecimal.valueOf(price));
         item.setCategory(category);
@@ -377,21 +377,21 @@ public class DatabaseInitializer implements CommandLineRunner {
         UserWallet johnWallet = new UserWallet();
         johnWallet.setUserId(employees.get(0).getId());
         johnWallet.setBalance(BigDecimal.valueOf(500.00));
-        johnWallet.setActive(true);
+        johnWallet.setIsActive(true);
         userWalletRepository.save(johnWallet);
 
         // Jane Smith - ₹300
         UserWallet janeWallet = new UserWallet();
         janeWallet.setUserId(employees.get(1).getId());
         janeWallet.setBalance(BigDecimal.valueOf(300.00));
-        janeWallet.setActive(true);
+        janeWallet.setIsActive(true);
         userWalletRepository.save(janeWallet);
 
         // Mike Johnson - ₹750
         UserWallet mikeWallet = new UserWallet();
         mikeWallet.setUserId(employees.get(2).getId());
         mikeWallet.setBalance(BigDecimal.valueOf(750.00));
-        mikeWallet.setActive(true);
+        mikeWallet.setIsActive(true);
         userWalletRepository.save(mikeWallet);
     }
 }
