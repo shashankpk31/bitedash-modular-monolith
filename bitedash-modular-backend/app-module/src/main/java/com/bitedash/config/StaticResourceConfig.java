@@ -23,7 +23,7 @@ import java.io.IOException;
  * In development, frontend runs separately on port 5173.
  */
 @Configuration
-@Profile("prod")
+@Profile({"prod", "aws"})
 public class StaticResourceConfig implements WebMvcConfigurer {
 
     @Override
