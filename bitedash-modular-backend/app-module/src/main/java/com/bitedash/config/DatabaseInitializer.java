@@ -57,7 +57,7 @@ import java.util.List;
  * ========================================================
  */
 @Component
-@Profile("prod")
+@Profile({"prod", "aws"})
 @RequiredArgsConstructor
 @Slf4j
 public class DatabaseInitializer implements CommandLineRunner {
